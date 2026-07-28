@@ -1,0 +1,15 @@
+[
+  {"id":1,"nombre":"Almendra","artistaId":1,"anioLanzamiento":1970,"rutaPortada":"data\\portadas\\album_1.jpg"},
+  {"id":2,"nombre":"Singles","artistaId":1,"anioLanzamiento":1970,"rutaPortada":"data\\portadas\\album_2.jpg"},
+  {"id":3,"nombre":"Almendra II","artistaId":1,"anioLanzamiento":1970,"rutaPortada":"data\\portadas\\album_3.jpg"},
+  {"id":4,"nombre":"Spinettalandia y Sus Amigos","artistaId":3,"anioLanzamiento":1972,"rutaPortada":"data\\portadas\\album_4.jpg"},
+  {"id":5,"nombre":"Please Please Me","artistaId":2,"anioLanzamiento":1963,"rutaPortada":"data\\portadas\\album_5.png"},
+  {"id":6,"nombre":"With The Beatles","artistaId":2,"anioLanzamiento":1963,"rutaPortada":"data\\portadas\\album_6.png"},
+  {"id":7,"nombre":"A Hard Day´s Nigth","artistaId":2,"anioLanzamiento":1964,"rutaPortada":"data\\portadas\\album_7.jpg"},
+  {"id":8,"nombre":"Beatles For Sale","artistaId":2,"anioLanzamiento":1964,"rutaPortada":"data\\portadas\\album_8.jpg"},
+  {"id":9,"nombre":"Help!","artistaId":2,"anioLanzamiento":1965,"rutaPortada":"data\\portadas\\album_9.png"},
+  {"id":10,"nombre":"Desatormentándonos","artistaId":5,"anioLanzamiento":1972,"rutaPortada":"data\\portadas\\album_10.png"},
+  {"id":11,"nombre":"Thriller","artistaId":6,"anioLanzamiento":1982,"rutaPortada":"data\\portadas\\album_11.png"},
+  {"id":12,"nombre":"Rubber Soul","artistaId":2,"anioLanzamiento":1965,"rutaPortada":"data\\portadas\\album_12.png"},
+  {"id":13,"nombre":"Revolver","artistaId":2,"anioLanzamiento":1966,"rutaPortada":"data\\portadas\\album_13.jpg"}
+]

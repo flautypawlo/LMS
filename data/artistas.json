@@ -1,0 +1,8 @@
+[
+  {"id":1,"nombre":"Almendra","tipo":"Banda","integrantes":["Luis Alberto Spinetta","Edelmiro Molinari","Emilio del Guercio","Rodolfo García"]},
+  {"id":2,"nombre":"The Beatles","tipo":"Banda","integrantes":["John Lennon","Paul McCartney","George Harrison","Ringo Starr"]},
+  {"id":3,"nombre":"Luis Alberto Spinetta","tipo":"Solista","fechaNacimiento":"1950-01-23","fechaFallecimiento":"2012-02-08","paisNacimiento":"Argentina"},
+  {"id":4,"nombre":"Paul McCartney","tipo":"Solista","fechaNacimiento":"1942-06-18","fechaFallecimiento":null,"paisNacimiento":"Reino Unido"},
+  {"id":5,"nombre":"Pescado Rabioso","tipo":"Banda","integrantes":["Luis Alberto Spinetta","Black Amaya","Carlos Cutaia","David Lebón","Osvaldo Frascino"]},
+  {"id":6,"nombre":"Michael Jackson","tipo":"Solista","fechaNacimiento":"1958-08-29","fechaFallecimiento":"2009-06-25","paisNacimiento":"Estados Unidos"}
+]
