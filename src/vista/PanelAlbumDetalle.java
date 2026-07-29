@@ -1,11 +1,11 @@
 package vista;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GridLayout;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
@@ -13,6 +13,7 @@ import java.awt.event.MouseEvent;
 import java.io.IOException;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -75,13 +76,13 @@ public class PanelAlbumDetalle extends JPanel {
         add(tarjetaGeneral, BorderLayout.CENTER);
     }
 
-   private JPanel construirPanelDerecho() {
+    private JPanel construirPanelDerecho() {
         JPanel panelDerecho = new JPanel(new BorderLayout(0, 12));
         panelDerecho.setOpaque(false);
 
         JPanel panelEncabezado = new JPanel(new BorderLayout(0, 8)); 
         panelEncabezado.setOpaque(false);
-        
+
         panelEncabezado.add(etiquetaTituloArtista, BorderLayout.NORTH);
 
         JPanel filaSubtitulo = new JPanel(new BorderLayout());
@@ -104,7 +105,6 @@ public class PanelAlbumDetalle extends JPanel {
         filaSubtitulo.add(panelNotaAlbum, BorderLayout.EAST);
 
         panelEncabezado.add(filaSubtitulo, BorderLayout.CENTER);
-        
 
         panelDerecho.add(panelEncabezado, BorderLayout.NORTH);
 
@@ -275,18 +275,32 @@ public class PanelAlbumDetalle extends JPanel {
     }
 
     private void agregarCancion() {
-        JTextField campoNombre = new JTextField();
-        JTextField campoMinutos = new JTextField();
-        JTextField campoSegundos = new JTextField();
-        JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
-        panel.add(new JLabel("Nombre:"));
-        panel.add(campoNombre);
-        panel.add(new JLabel("Minutos:"));
-        panel.add(campoMinutos);
-        panel.add(new JLabel("Segundos:"));
-        panel.add(campoSegundos);
+        CampoTextoRedondeado campoNombre = new CampoTextoRedondeado("");
+        campoNombre.setPreferredSize(new Dimension(300, 36));
+        campoNombre.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
-        int resultado = DialogoUtil.mostrarFormulario(this, panel, "Agregar Canción");
+        CampoTextoRedondeado campoMinutos = new CampoTextoRedondeado("");
+        campoMinutos.setPreferredSize(new Dimension(80, 36));
+        CampoTextoRedondeado campoSegundos = new CampoTextoRedondeado("");
+        campoSegundos.setPreferredSize(new Dimension(80, 36));
+
+        JPanel filaDuracion = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        filaDuracion.setOpaque(false);
+        filaDuracion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        filaDuracion.add(DialogoUtil.crearEtiquetaCampo("Minutos:"));
+        filaDuracion.add(campoMinutos);
+        filaDuracion.add(DialogoUtil.crearEtiquetaCampo("Segundos:"));
+        filaDuracion.add(campoSegundos);
+
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.add(DialogoUtil.crearEtiquetaCampo("Nombre:"));
+        panel.add(campoNombre);
+        panel.add(Box.createVerticalStrut(14));
+        panel.add(filaDuracion);
+
+        int resultado = DialogoUtil.mostrarFormulario(this, panel, "Agregar Cancion");
         if (resultado != JOptionPane.OK_OPTION) {
             return;
         }
@@ -308,18 +322,35 @@ public class PanelAlbumDetalle extends JPanel {
             mostrarError("Seleccioná una canción primero.");
             return;
         }
-        JTextField campoNombre = new JTextField(cancionSeleccionada.getNombre());
-        JTextField campoMinutos = new JTextField(String.valueOf(cancionSeleccionada.getDuracionSegundos() / 60));
-        JTextField campoSegundos = new JTextField(String.valueOf(cancionSeleccionada.getDuracionSegundos() % 60));
-        JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
-        panel.add(new JLabel("Nombre:"));
-        panel.add(campoNombre);
-        panel.add(new JLabel("Minutos:"));
-        panel.add(campoMinutos);
-        panel.add(new JLabel("Segundos:"));
-        panel.add(campoSegundos);
+        CampoTextoRedondeado campoNombre = new CampoTextoRedondeado("");
+        campoNombre.setText(cancionSeleccionada.getNombre());
+        campoNombre.setPreferredSize(new Dimension(300, 36));
+        campoNombre.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
-        int resultado = DialogoUtil.mostrarFormulario(this, panel, "Modificar Canción");
+        CampoTextoRedondeado campoMinutos = new CampoTextoRedondeado("");
+        campoMinutos.setText(String.valueOf(cancionSeleccionada.getDuracionSegundos() / 60));
+        campoMinutos.setPreferredSize(new Dimension(80, 36));
+        CampoTextoRedondeado campoSegundos = new CampoTextoRedondeado("");
+        campoSegundos.setText(String.valueOf(cancionSeleccionada.getDuracionSegundos() % 60));
+        campoSegundos.setPreferredSize(new Dimension(80, 36));
+
+        JPanel filaDuracion = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        filaDuracion.setOpaque(false);
+        filaDuracion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        filaDuracion.add(DialogoUtil.crearEtiquetaCampo("Minutos:"));
+        filaDuracion.add(campoMinutos);
+        filaDuracion.add(DialogoUtil.crearEtiquetaCampo("Segundos:"));
+        filaDuracion.add(campoSegundos);
+
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.add(DialogoUtil.crearEtiquetaCampo("Nombre:"));
+        panel.add(campoNombre);
+        panel.add(Box.createVerticalStrut(14));
+        panel.add(filaDuracion);
+
+        int resultado = DialogoUtil.mostrarFormulario(this, panel, "Modificar Cancion");
         if (resultado != JOptionPane.OK_OPTION) {
             return;
         }

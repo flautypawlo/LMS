@@ -15,7 +15,7 @@ public class PanelBienvenida extends JPanel {
         setLayout(new BorderLayout());
         setBackground(TemaVisual.FONDO);
 
-        JLabel etiquetaTitulo = new JLabel("Music Rating System", SwingConstants.CENTER);
+        JLabel etiquetaTitulo = new JLabel("Lotolovich Music Station", SwingConstants.CENTER);
         etiquetaTitulo.setFont(new Font("Serif", Font.BOLD, 42));
         etiquetaTitulo.setForeground(TemaVisual.TEXTO_CLARO);
         etiquetaTitulo.setBorder(BorderFactory.createEmptyBorder(25, 10, 25, 10));

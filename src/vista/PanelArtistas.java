@@ -1,6 +1,7 @@
 package vista;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -22,7 +24,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -274,45 +275,66 @@ public class PanelArtistas extends JPanel {
     }
 
     private Solista mostrarDialogoSolista(Solista existente) {
-        JTextField campoNombre = new JTextField(existente == null ? "" : existente.getNombre());
-        JTextField campoPais = new JTextField(existente == null ? "" : existente.getPaisNacimiento());
+        CampoTextoRedondeado campoNombre = new CampoTextoRedondeado("");
+        campoNombre.setText(existente == null ? "" : existente.getNombre());
+        campoNombre.setPreferredSize(new Dimension(320, 36));
+        campoNombre.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+
+        CampoTextoRedondeado campoPais = new CampoTextoRedondeado("");
+        campoPais.setText(existente == null ? "" : existente.getPaisNacimiento());
+        campoPais.setPreferredSize(new Dimension(320, 36));
+        campoPais.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
         LocalDate nacimientoExistente = existente == null ? null : existente.getFechaNacimiento();
-        JTextField campoAnioNacimiento = new JTextField(nacimientoExistente == null ? "" : String.valueOf(nacimientoExistente.getYear()), 4);
-        JTextField campoMesNacimiento = new JTextField(nacimientoExistente == null ? "" : String.valueOf(nacimientoExistente.getMonthValue()), 4);
-        JTextField campoDiaNacimiento = new JTextField(nacimientoExistente == null ? "" : String.valueOf(nacimientoExistente.getDayOfMonth()), 4);
+        CampoTextoRedondeado campoAnioNacimiento = crearCampoFechaPequenio(
+                nacimientoExistente == null ? "" : String.valueOf(nacimientoExistente.getYear()));
+        CampoTextoRedondeado campoMesNacimiento = crearCampoFechaPequenio(
+                nacimientoExistente == null ? "" : String.valueOf(nacimientoExistente.getMonthValue()));
+        CampoTextoRedondeado campoDiaNacimiento = crearCampoFechaPequenio(
+                nacimientoExistente == null ? "" : String.valueOf(nacimientoExistente.getDayOfMonth()));
 
         LocalDate fallecimientoExistente = existente == null ? null : existente.getFechaFallecimiento();
-        JTextField campoAnioFallecimiento = new JTextField(fallecimientoExistente == null ? "" : String.valueOf(fallecimientoExistente.getYear()), 4);
-        JTextField campoMesFallecimiento = new JTextField(fallecimientoExistente == null ? "" : String.valueOf(fallecimientoExistente.getMonthValue()), 4);
-        JTextField campoDiaFallecimiento = new JTextField(fallecimientoExistente == null ? "" : String.valueOf(fallecimientoExistente.getDayOfMonth()), 4);
+        CampoTextoRedondeado campoAnioFallecimiento = crearCampoFechaPequenio(
+                fallecimientoExistente == null ? "" : String.valueOf(fallecimientoExistente.getYear()));
+        CampoTextoRedondeado campoMesFallecimiento = crearCampoFechaPequenio(
+                fallecimientoExistente == null ? "" : String.valueOf(fallecimientoExistente.getMonthValue()));
+        CampoTextoRedondeado campoDiaFallecimiento = crearCampoFechaPequenio(
+                fallecimientoExistente == null ? "" : String.valueOf(fallecimientoExistente.getDayOfMonth()));
+
+        JPanel filaNacimiento = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        filaNacimiento.setOpaque(false);
+        filaNacimiento.setAlignmentX(Component.LEFT_ALIGNMENT);
+        filaNacimiento.add(DialogoUtil.crearEtiquetaCampo("Año:"));
+        filaNacimiento.add(campoAnioNacimiento);
+        filaNacimiento.add(DialogoUtil.crearEtiquetaCampo("Mes:"));
+        filaNacimiento.add(campoMesNacimiento);
+        filaNacimiento.add(DialogoUtil.crearEtiquetaCampo("Día:"));
+        filaNacimiento.add(campoDiaNacimiento);
+
+        JPanel filaFallecimiento = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        filaFallecimiento.setOpaque(false);
+        filaFallecimiento.setAlignmentX(Component.LEFT_ALIGNMENT);
+        filaFallecimiento.add(DialogoUtil.crearEtiquetaCampo("Año:"));
+        filaFallecimiento.add(campoAnioFallecimiento);
+        filaFallecimiento.add(DialogoUtil.crearEtiquetaCampo("Mes:"));
+        filaFallecimiento.add(campoMesFallecimiento);
+        filaFallecimiento.add(DialogoUtil.crearEtiquetaCampo("Día:"));
+        filaFallecimiento.add(campoDiaFallecimiento);
 
         JPanel panel = new JPanel();
+        panel.setOpaque(false);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-
-        JPanel filaNombre = new JPanel(new BorderLayout(5, 5));
-        filaNombre.add(new JLabel("Nombre:"), BorderLayout.WEST);
-        filaNombre.add(campoNombre, BorderLayout.CENTER);
-        panel.add(filaNombre);
-
-        panel.add(new JLabel("Fecha de nacimiento:"));
-        JPanel filaNacimiento = new JPanel(new GridLayout(1, 3, 5, 5));
-        filaNacimiento.add(crearCampoFecha("Año", campoAnioNacimiento));
-        filaNacimiento.add(crearCampoFecha("Mes", campoMesNacimiento));
-        filaNacimiento.add(crearCampoFecha("Día", campoDiaNacimiento));
+        panel.add(DialogoUtil.crearEtiquetaCampo("Nombre:"));
+        panel.add(campoNombre);
+        panel.add(Box.createVerticalStrut(14));
+        panel.add(DialogoUtil.crearEtiquetaCampo("Fecha de Nacimiento:"));
         panel.add(filaNacimiento);
-
-        panel.add(new JLabel("Fecha de fallecimiento (opcional):"));
-        JPanel filaFallecimiento = new JPanel(new GridLayout(1, 3, 5, 5));
-        filaFallecimiento.add(crearCampoFecha("Año", campoAnioFallecimiento));
-        filaFallecimiento.add(crearCampoFecha("Mes", campoMesFallecimiento));
-        filaFallecimiento.add(crearCampoFecha("Día", campoDiaFallecimiento));
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(DialogoUtil.crearEtiquetaCampo("Fecha de Fallecimeinto (Opcional):"));
         panel.add(filaFallecimiento);
-
-        JPanel filaPais = new JPanel(new BorderLayout(5, 5));
-        filaPais.add(new JLabel("País de nacimiento:"), BorderLayout.WEST);
-        filaPais.add(campoPais, BorderLayout.CENTER);
-        panel.add(filaPais);
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(DialogoUtil.crearEtiquetaCampo("Pais de Nacimiento:"));
+        panel.add(campoPais);
 
         int resultado = DialogoUtil.mostrarFormulario(this, panel,
                 existente == null ? "Agregar Solista" : "Modificar Solista");
@@ -335,11 +357,11 @@ public class PanelArtistas extends JPanel {
         }
     }
 
-    private JPanel crearCampoFecha(String etiqueta, JTextField campo) {
-        JPanel panel = new JPanel(new BorderLayout(2, 2));
-        panel.add(new JLabel(etiqueta), BorderLayout.NORTH);
-        panel.add(campo, BorderLayout.CENTER);
-        return panel;
+    private CampoTextoRedondeado crearCampoFechaPequenio(String textoInicial) {
+        CampoTextoRedondeado campo = new CampoTextoRedondeado("");
+        campo.setText(textoInicial);
+        campo.setPreferredSize(new Dimension(64, 34));
+        return campo;
     }
 
     private LocalDate construirFecha(String textoAnio, String textoMes, String textoDia) {
@@ -361,19 +383,39 @@ public class PanelArtistas extends JPanel {
     }
 
     private Banda mostrarDialogoBanda(Banda existente) {
-        JTextField campoNombre = new JTextField(existente == null ? "" : existente.getNombre());
-        JTextArea campoIntegrantes = new JTextArea(5, 20);
+        CampoTextoRedondeado campoNombre = new CampoTextoRedondeado("");
+        campoNombre.setText(existente == null ? "" : existente.getNombre());
+        campoNombre.setPreferredSize(new Dimension(360, 36));
+        campoNombre.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+
+        JTextArea campoIntegrantes = new JTextArea(6, 24);
+        campoIntegrantes.setLineWrap(true);
+        campoIntegrantes.setWrapStyleWord(true);
+        campoIntegrantes.setFont(new Font("Serif", Font.BOLD, 14));
+        campoIntegrantes.setForeground(TemaVisual.TEXTO_CLARO);
+        campoIntegrantes.setBackground(TemaVisual.FONDO_BADGE);
+        campoIntegrantes.setCaretColor(TemaVisual.TEXTO_CLARO);
+        campoIntegrantes.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         if (existente != null) {
             campoIntegrantes.setText(String.join("\n", existente.getIntegrantes()));
         }
 
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        JPanel panelNombre = new JPanel(new BorderLayout(5, 5));
-        panelNombre.add(new JLabel("Nombre:"), BorderLayout.WEST);
-        panelNombre.add(campoNombre, BorderLayout.CENTER);
-        panel.add(panelNombre, BorderLayout.NORTH);
-        panel.add(new JLabel("Integrantes (uno por línea):"), BorderLayout.CENTER);
-        panel.add(new JScrollPane(campoIntegrantes), BorderLayout.SOUTH);
+        PanelRedondeado tarjetaIntegrantes = new PanelRedondeado(TemaVisual.FONDO_BADGE, TemaVisual.BORDE_ACENTO, 14);
+        tarjetaIntegrantes.setLayout(new BorderLayout());
+        tarjetaIntegrantes.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        tarjetaIntegrantes.add(new JScrollPane(campoIntegrantes), BorderLayout.CENTER);
+        tarjetaIntegrantes.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tarjetaIntegrantes.setPreferredSize(new Dimension(360, 160));
+        tarjetaIntegrantes.setMaximumSize(new Dimension(Integer.MAX_VALUE, 160));
+
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.add(DialogoUtil.crearEtiquetaCampo("Nombre:"));
+        panel.add(campoNombre);
+        panel.add(Box.createVerticalStrut(14));
+        panel.add(DialogoUtil.crearEtiquetaCampo("Nombre de los integrantes (uno por linea):"));
+        panel.add(tarjetaIntegrantes);
 
         int resultado = DialogoUtil.mostrarFormulario(this, panel,
                 existente == null ? "Agregar Banda" : "Modificar Banda");

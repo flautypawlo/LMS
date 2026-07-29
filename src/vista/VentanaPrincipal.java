@@ -106,7 +106,7 @@ public class VentanaPrincipal extends JFrame {
         panelLogo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         JLabel etiquetaIcono = new JLabel(cargarIconoLogo());
-        JLabel etiquetaTexto = new JLabel("MRS");
+        JLabel etiquetaTexto = new JLabel("LMS");
         etiquetaTexto.setFont(new Font("Serif", Font.BOLD, 26));
         etiquetaTexto.setForeground(TemaVisual.TEXTO_CLARO);
 

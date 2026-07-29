@@ -19,10 +19,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
-import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -30,7 +30,6 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
@@ -319,7 +318,11 @@ public class PanelAlbums extends JPanel {
             return null;
         }
 
-        JTextField campoNombre = new JTextField(existente == null ? "" : existente.getNombre());
+        CampoTextoRedondeado campoNombre = new CampoTextoRedondeado("");
+        campoNombre.setText(existente == null ? "" : existente.getNombre());
+        campoNombre.setPreferredSize(new Dimension(320, 36));
+        campoNombre.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+
         JComboBox<Artista> comboArtistas = new JComboBox<>(artistasDisponibles.toArray(new Artista[0]));
         comboArtistas.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -332,16 +335,29 @@ public class PanelAlbums extends JPanel {
                 return this;
             }
         });
+        comboArtistas.setBackground(TemaVisual.FONDO_TARJETA);
+        comboArtistas.setForeground(TemaVisual.TEXTO_CLARO);
+        comboArtistas.setFont(new Font("Serif", Font.BOLD, 14));
+        comboArtistas.setBorder(new LineBorder(TemaVisual.BORDE_ACENTO, 1, true));
+        comboArtistas.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        comboArtistas.setAlignmentX(Component.LEFT_ALIGNMENT);
         if (existente != null) {
             comboArtistas.setSelectedItem(existente.getArtista());
         }
-        JTextField campoAnio = new JTextField(
+
+        CampoTextoRedondeado campoAnio = new CampoTextoRedondeado("");
+        campoAnio.setText(
                 existente == null ? String.valueOf(LocalDate.now().getYear()) : String.valueOf(existente.getAnioLanzamiento()));
+        campoAnio.setPreferredSize(new Dimension(320, 36));
+        campoAnio.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
         JLabel etiquetaPortada = new JLabel(existente == null || existente.getRutaPortada() == null ? "Sin portada"
                 : new File(existente.getRutaPortada()).getName());
+        etiquetaPortada.setFont(new Font("Serif", Font.BOLD, 14));
+        etiquetaPortada.setForeground(TemaVisual.TEXTO_CLARO);
         final File[] archivoPortadaSeleccionado = new File[1];
-        JButton botonSeleccionarPortada = new JButton("Seleccionar portada...");
+        BotonRedondeado botonSeleccionarPortada = new BotonRedondeado("Seleccionar Portada", TemaVisual.BOTON_FONDO,
+                TemaVisual.BOTON_TEXTO);
         botonSeleccionarPortada.addActionListener(evento -> {
             JFileChooser selector = new JFileChooser();
             selector.setFileFilter(new FileNameExtensionFilter("Imágenes", "jpg", "jpeg", "png", "gif"));
@@ -352,18 +368,28 @@ public class PanelAlbums extends JPanel {
             }
         });
 
-        JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
-        panel.add(new JLabel("Nombre:"));
+        JPanel filaPortada = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        filaPortada.setOpaque(false);
+        filaPortada.setAlignmentX(Component.LEFT_ALIGNMENT);
+        filaPortada.add(botonSeleccionarPortada);
+        filaPortada.add(etiquetaPortada);
+
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.add(DialogoUtil.crearEtiquetaCampo("Nombre:"));
         panel.add(campoNombre);
-        panel.add(new JLabel("Artista:"));
+        panel.add(Box.createVerticalStrut(12));
+        panel.add(DialogoUtil.crearEtiquetaCampo("Artista:"));
         panel.add(comboArtistas);
-        panel.add(new JLabel("Año de lanzamiento:"));
+        panel.add(Box.createVerticalStrut(12));
+        panel.add(DialogoUtil.crearEtiquetaCampo("Año de lanzamiento:"));
         panel.add(campoAnio);
-        panel.add(botonSeleccionarPortada);
-        panel.add(etiquetaPortada);
+        panel.add(Box.createVerticalStrut(12));
+        panel.add(filaPortada);
 
         int resultado = DialogoUtil.mostrarFormulario(this, panel,
-                existente == null ? "Agregar Álbum" : "Modificar Álbum");
+                existente == null ? "Agregar Album" : "Modificar Album");
         if (resultado != JOptionPane.OK_OPTION) {
             return null;
         }
