@@ -2,6 +2,7 @@ package vista;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -16,14 +17,19 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
+import javax.swing.ImageIcon;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -31,6 +37,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -42,6 +50,7 @@ import modelo.Album;
 import modelo.Artista;
 import modelo.Cancion;
 import util.Config;
+import util.MusicBrainzCliente;
 
 public class PanelAlbums extends JPanel {
 
@@ -50,6 +59,12 @@ public class PanelAlbums extends JPanel {
     private final JList<Album> listaAlbumes;
     private final CampoTextoRedondeado campoBusqueda;
     private final JComboBox<String> comboOrden;
+
+    private static final Object MARCADOR_MANUAL = new Object();
+    private List<MusicBrainzCliente.ResultadoAlbum> resultadosBusquedaMusicBrainz = new ArrayList<>();
+    private MusicBrainzCliente.ResultadoAlbum resultadoMusicBrainzSeleccionado;
+    private PanelDesplazable panelResultadosMusicBrainz;
+    private final Map<String, ImageIcon> cacheMiniaturasMusicBrainz = new HashMap<>();
 
     public PanelAlbums(VentanaPrincipal ventanaPrincipal) {
         this.ventanaPrincipal = ventanaPrincipal;
@@ -122,7 +137,7 @@ public class PanelAlbums extends JPanel {
         BotonRedondeado botonModificar = new BotonRedondeado("Modificar", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
         BotonRedondeado botonEliminar = new BotonRedondeado("Borrar -", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
 
-        botonAgregar.addActionListener(evento -> agregar());
+        botonAgregar.addActionListener(evento -> agregarConBusquedaMusicBrainz());
         botonModificar.addActionListener(evento -> modificar());
         botonEliminar.addActionListener(evento -> eliminar());
 
@@ -174,7 +189,9 @@ public class PanelAlbums extends JPanel {
         etiquetaNombre.setFont(new Font("Serif", Font.BOLD, 22));
         etiquetaNombre.setForeground(TemaVisual.TEXTO_CLARO);
 
-        JLabel etiquetaArtista = new JLabel(album.getArtista().getNombre());
+        String nombreArtistaMostrar = album.obtenerNombreArtistaParaMostrar();
+        JLabel etiquetaArtista = new JLabel(nombreArtistaMostrar == null ? "Sin artista asignado"
+                : album.getArtista() == null ? nombreArtistaMostrar + " (sin registrar)" : nombreArtistaMostrar);
         etiquetaArtista.setFont(new Font("Serif", Font.BOLD, 13));
         etiquetaArtista.setForeground(TemaVisual.TEXTO_SECUNDARIO);
 
@@ -264,6 +281,325 @@ public class PanelAlbums extends JPanel {
         }
     }
 
+    private void agregarConBusquedaMusicBrainz() {
+        Object resultado = mostrarDialogoBusquedaMusicBrainz();
+        if (resultado == null) {
+            return;
+        }
+        if (resultado == MARCADOR_MANUAL) {
+            agregar();
+            return;
+        }
+
+        MusicBrainzCliente.ResultadoAlbum seleccionado = (MusicBrainzCliente.ResultadoAlbum) resultado;
+
+        File portadaDescargada = null;
+        try {
+            Path rutaTemporal = MusicBrainzCliente.descargarPortada(seleccionado.getMbid());
+            if (rutaTemporal != null) {
+                portadaDescargada = rutaTemporal.toFile();
+            }
+        } catch (IOException excepcion) {
+            // La portada es opcional: si falla la descarga, seguimos sin ella.
+        }
+
+        List<MusicBrainzCliente.PistaAlbum> pistas;
+        try {
+            pistas = MusicBrainzCliente.obtenerPistas(seleccionado.getMbid());
+        } catch (IOException excepcion) {
+            mostrarError("No se pudieron obtener las canciones desde MusicBrainz: " + excepcion.getMessage()
+                    + "\nEl álbum se puede seguir agregando, solo que sin canciones precargadas.");
+            pistas = new ArrayList<>();
+        }
+
+        Artista artistaCoincidente = buscarArtistaExacto(seleccionado.getArtista());
+        Album album = mostrarDialogoAlbum(null, seleccionado.getTitulo(), seleccionado.getAnio(), artistaCoincidente,
+                portadaDescargada, seleccionado.getArtista());
+        if (album == null) {
+            return;
+        }
+        try {
+            ventanaPrincipal.getAlbumController().agregar(album);
+            for (MusicBrainzCliente.PistaAlbum pista : pistas) {
+                try {
+                    int idCancion = ventanaPrincipal.getAlbumController().generarNuevoIdCancion();
+                    Cancion cancion = new Cancion(idCancion, pista.getTitulo(), pista.getDuracionSegundos());
+                    ventanaPrincipal.getAlbumController().agregarCancion(album.getId(), cancion);
+                } catch (IllegalArgumentException | IOException excepcionCancion) {
+                    // Si una canción puntual falla (p. ej. nombre duplicado), seguimos con el resto.
+                }
+            }
+            refrescar();
+        } catch (IllegalArgumentException | IOException excepcion) {
+            mostrarError(excepcion.getMessage());
+        }
+    }
+
+    private Artista buscarArtistaExacto(String nombre) {
+        if (nombre == null || nombre.trim().isEmpty()) {
+            return null;
+        }
+        for (Artista artista : ventanaPrincipal.getArtistaController().obtenerTodos()) {
+            if (artista.getNombre().equalsIgnoreCase(nombre.trim())) {
+                return artista;
+            }
+        }
+        return null;
+    }
+
+    private Object mostrarDialogoBusquedaMusicBrainz() {
+        resultadosBusquedaMusicBrainz = new ArrayList<>();
+        resultadoMusicBrainzSeleccionado = null;
+        panelResultadosMusicBrainz = new PanelDesplazable();
+        panelResultadosMusicBrainz.setBackground(TemaVisual.FONDO_FILA);
+
+        CampoTextoRedondeado campoNombreMb = new CampoTextoRedondeado("Nombre del álbum...");
+        campoNombreMb.setPreferredSize(new Dimension(340, 36));
+        campoNombreMb.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+
+        CampoTextoRedondeado campoArtistaMb = new CampoTextoRedondeado("Artista (opcional)...");
+        campoArtistaMb.setPreferredSize(new Dimension(340, 36));
+        campoArtistaMb.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+
+        BotonRedondeado botonBuscarMb = new BotonRedondeado("Buscar", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
+
+        JPanel filaNombreMb = new JPanel(new BorderLayout(10, 0));
+        filaNombreMb.setOpaque(false);
+        filaNombreMb.setAlignmentX(Component.LEFT_ALIGNMENT);
+        filaNombreMb.add(DialogoUtil.crearEtiquetaCampo("Nombre:"), BorderLayout.WEST);
+        filaNombreMb.add(campoNombreMb, BorderLayout.CENTER);
+
+        JPanel filaArtistaMb = new JPanel(new BorderLayout(10, 0));
+        filaArtistaMb.setOpaque(false);
+        filaArtistaMb.setAlignmentX(Component.LEFT_ALIGNMENT);
+        filaArtistaMb.add(DialogoUtil.crearEtiquetaCampo("Artista:"), BorderLayout.WEST);
+        filaArtistaMb.add(campoArtistaMb, BorderLayout.CENTER);
+        filaArtistaMb.add(botonBuscarMb, BorderLayout.EAST);
+
+        JLabel etiquetaEstado = new JLabel(" ");
+        etiquetaEstado.setFont(new Font("Serif", Font.BOLD, 12));
+        etiquetaEstado.setForeground(TemaVisual.TEXTO_SECUNDARIO);
+        etiquetaEstado.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        PanelRedondeado tarjetaResultados = new PanelRedondeado(TemaVisual.FONDO_FILA, TemaVisual.BORDE_ACENTO, 16);
+        tarjetaResultados.setLayout(new BorderLayout());
+        tarjetaResultados.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+        tarjetaResultados.setPreferredSize(new Dimension(420, 260));
+        tarjetaResultados.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JScrollPane scrollResultados = new JScrollPane(panelResultadosMusicBrainz);
+        scrollResultados.setBorder(BorderFactory.createEmptyBorder());
+        scrollResultados.setOpaque(false);
+        scrollResultados.getViewport().setOpaque(true);
+        scrollResultados.getViewport().setBackground(TemaVisual.FONDO_FILA);
+        scrollResultados.getVerticalScrollBar().setUI(new BarraDesplazamientoRedondeada());
+        scrollResultados.getVerticalScrollBar().setPreferredSize(new Dimension(14, 0));
+        scrollResultados.getVerticalScrollBar().setOpaque(false);
+        tarjetaResultados.add(scrollResultados, BorderLayout.CENTER);
+
+        JPanel panelCampos = new JPanel();
+        panelCampos.setOpaque(false);
+        panelCampos.setLayout(new BoxLayout(panelCampos, BoxLayout.Y_AXIS));
+        panelCampos.add(filaNombreMb);
+        panelCampos.add(Box.createVerticalStrut(10));
+        panelCampos.add(filaArtistaMb);
+        panelCampos.add(Box.createVerticalStrut(8));
+        panelCampos.add(etiquetaEstado);
+        panelCampos.add(Box.createVerticalStrut(8));
+        panelCampos.add(tarjetaResultados);
+
+        PanelRedondeado tarjeta = new PanelRedondeado(TemaVisual.FONDO_TARJETA, TemaVisual.BORDE_ACENTO, 22);
+        tarjeta.setLayout(new BorderLayout(0, 16));
+        tarjeta.setBorder(BorderFactory.createEmptyBorder(20, 25, 20, 25));
+
+        JLabel etiquetaTitulo = new JLabel("Buscar Álbum en MusicBrainz", SwingConstants.CENTER);
+        etiquetaTitulo.setFont(new Font("Serif", Font.BOLD, 22));
+        etiquetaTitulo.setForeground(TemaVisual.TEXTO_CLARO);
+        tarjeta.add(etiquetaTitulo, BorderLayout.NORTH);
+        tarjeta.add(panelCampos, BorderLayout.CENTER);
+
+        JOptionPane opcionPane = new JOptionPane(tarjeta, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null,
+                new Object[0]);
+        opcionPane.setBorder(BorderFactory.createEmptyBorder());
+        opcionPane.setBackground(TemaVisual.FONDO);
+        opcionPane.setOpaque(true);
+
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        panelBotones.setOpaque(false);
+        BotonRedondeado botonSeleccionar = new BotonRedondeado("Seleccionar", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
+        BotonRedondeado botonManual = new BotonRedondeado("Agregar Manualmente", TemaVisual.BOTON_FONDO,
+                TemaVisual.BOTON_TEXTO);
+        BotonRedondeado botonCancelar = new BotonRedondeado("Cancelar", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
+        panelBotones.add(botonSeleccionar);
+        panelBotones.add(botonManual);
+        panelBotones.add(botonCancelar);
+        tarjeta.add(panelBotones, BorderLayout.SOUTH);
+
+        Runnable ejecutarBusqueda = () -> {
+            String nombre = campoNombreMb.getText().trim();
+            String artista = campoArtistaMb.getText().trim();
+            if (nombre.isEmpty() && artista.isEmpty()) {
+                etiquetaEstado.setText("Ingresá al menos el nombre del álbum o el artista.");
+                return;
+            }
+            String consulta = construirConsultaLucene(nombre, artista);
+            etiquetaEstado.setText("Buscando...");
+            botonBuscarMb.setEnabled(false);
+            SwingWorker<List<MusicBrainzCliente.ResultadoAlbum>, Void> tarea = new SwingWorker<>() {
+                @Override
+                protected List<MusicBrainzCliente.ResultadoAlbum> doInBackground() throws Exception {
+                    return MusicBrainzCliente.buscarAlbumes(consulta);
+                }
+
+                @Override
+                protected void done() {
+                    botonBuscarMb.setEnabled(true);
+                    try {
+                        resultadosBusquedaMusicBrainz = get();
+                        resultadoMusicBrainzSeleccionado = null;
+                        reconstruirFilasBusqueda();
+                        etiquetaEstado.setText(resultadosBusquedaMusicBrainz.isEmpty() ? "Sin resultados."
+                                : resultadosBusquedaMusicBrainz.size() + " resultado(s).");
+                    } catch (Exception excepcionEjecucion) {
+                        etiquetaEstado.setText("Error al buscar. Revisá tu conexión a internet.");
+                    }
+                }
+            };
+            tarea.execute();
+        };
+        botonBuscarMb.addActionListener(evento -> ejecutarBusqueda.run());
+        campoNombreMb.addActionListener(evento -> ejecutarBusqueda.run());
+        campoArtistaMb.addActionListener(evento -> ejecutarBusqueda.run());
+
+        botonSeleccionar.addActionListener(evento -> {
+            if (resultadoMusicBrainzSeleccionado == null) {
+                etiquetaEstado.setText("Seleccioná un resultado de la lista primero.");
+                return;
+            }
+            opcionPane.setValue(resultadoMusicBrainzSeleccionado);
+        });
+        botonManual.addActionListener(evento -> opcionPane.setValue(MARCADOR_MANUAL));
+        botonCancelar.addActionListener(evento -> opcionPane.setValue(JOptionPane.CANCEL_OPTION));
+
+        JDialog dialogo = opcionPane.createDialog(this, "Buscar Álbum en MusicBrainz");
+        dialogo.getContentPane().setBackground(TemaVisual.FONDO);
+        dialogo.setResizable(true);
+        dialogo.setVisible(true);
+
+        Object valor = opcionPane.getValue();
+        if (valor instanceof MusicBrainzCliente.ResultadoAlbum || valor == MARCADOR_MANUAL) {
+            return valor;
+        }
+        return null;
+    }
+
+    private JComponent construirFilaResultadoBusqueda(MusicBrainzCliente.ResultadoAlbum resultado) {
+        boolean seleccionado = resultadoMusicBrainzSeleccionado == resultado;
+
+        JPanel envoltorio = new JPanel(new BorderLayout());
+        envoltorio.setOpaque(false);
+        envoltorio.setBorder(BorderFactory.createEmptyBorder(3, 4, 3, 8));
+
+        JPanel fila = new PanelRedondeado(TemaVisual.FONDO_TARJETA,
+                seleccionado ? TemaVisual.TEXTO_CLARO : TemaVisual.BORDE_ACENTO, 14);
+        fila.setLayout(new BorderLayout());
+        fila.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        fila.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        JLabel etiquetaMiniatura = new JLabel();
+        etiquetaMiniatura.setPreferredSize(new Dimension(45, 45));
+        etiquetaMiniatura.setHorizontalAlignment(SwingConstants.CENTER);
+        ImageIcon miniaturaCacheada = cacheMiniaturasMusicBrainz.get(resultado.getMbid());
+        if (miniaturaCacheada != null) {
+            etiquetaMiniatura.setIcon(miniaturaCacheada);
+        } else {
+            cargarMiniaturaAsincronica(resultado.getMbid(), etiquetaMiniatura);
+        }
+        fila.add(etiquetaMiniatura, BorderLayout.WEST);
+
+        String anioTexto = resultado.getAnio() == null ? "¿?" : String.valueOf(resultado.getAnio());
+        String artistaTexto = resultado.getArtista().isEmpty() ? "Artista desconocido" : resultado.getArtista();
+        JLabel etiqueta = new JLabel(resultado.getTitulo() + " — " + artistaTexto + " (" + anioTexto + ")");
+        etiqueta.setFont(new Font("Serif", Font.BOLD, 15));
+        etiqueta.setForeground(TemaVisual.TEXTO_CLARO);
+        etiqueta.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 0));
+        fila.add(etiqueta, BorderLayout.CENTER);
+
+        MouseAdapter seleccionar = new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent evento) {
+                resultadoMusicBrainzSeleccionado = resultado;
+                reconstruirFilasBusqueda();
+            }
+        };
+        fila.addMouseListener(seleccionar);
+        etiqueta.addMouseListener(seleccionar);
+        etiquetaMiniatura.addMouseListener(seleccionar);
+
+        envoltorio.add(fila, BorderLayout.CENTER);
+        return envoltorio;
+    }
+
+    private void cargarMiniaturaAsincronica(String mbid, JLabel etiquetaDestino) {
+        SwingWorker<ImageIcon, Void> tarea = new SwingWorker<>() {
+            @Override
+            protected ImageIcon doInBackground() throws Exception {
+                Path rutaTemporal = MusicBrainzCliente.descargarMiniatura(mbid);
+                if (rutaTemporal == null) {
+                    return null;
+                }
+                return ImagenUtil.cargarEscalada(rutaTemporal.toString(), 45, 45);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    ImageIcon icono = get();
+                    if (icono != null) {
+                        cacheMiniaturasMusicBrainz.put(mbid, icono);
+                        etiquetaDestino.setIcon(icono);
+                    }
+                } catch (Exception excepcionEjecucion) {
+                    // Sin miniatura disponible para esta release: la fila queda sin imagen.
+                }
+            }
+        };
+        tarea.execute();
+    }
+
+    private void reconstruirFilasBusqueda() {
+        panelResultadosMusicBrainz.removeAll();
+        for (MusicBrainzCliente.ResultadoAlbum resultado : resultadosBusquedaMusicBrainz) {
+            panelResultadosMusicBrainz.add(construirFilaResultadoBusqueda(resultado));
+        }
+        panelResultadosMusicBrainz.revalidate();
+        panelResultadosMusicBrainz.repaint();
+    }
+
+    /**
+     * Arma una consulta en sintaxis Lucene de MusicBrainz combinando nombre de
+     * álbum y artista como campos separados (release:"..." AND artist:"..."),
+     * en vez de una búsqueda genérica de texto libre. Esto da resultados mucho
+     * más precisos cuando se conocen ambos datos.
+     */
+    private String construirConsultaLucene(String nombre, String artista) {
+        StringBuilder consulta = new StringBuilder();
+        if (!nombre.isEmpty()) {
+            consulta.append("release:\"").append(escaparLucene(nombre)).append("\"");
+        }
+        if (!artista.isEmpty()) {
+            if (consulta.length() > 0) {
+                consulta.append(" AND ");
+            }
+            consulta.append("artist:\"").append(escaparLucene(artista)).append("\"");
+        }
+        return consulta.toString();
+    }
+
+    private String escaparLucene(String texto) {
+        return texto.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
     private void modificar() {
         Album seleccionado = listaAlbumes.getSelectedValue();
         if (seleccionado == null) {
@@ -311,6 +647,11 @@ public class PanelAlbums extends JPanel {
     }
 
     private Album mostrarDialogoAlbum(Album existente) {
+        return mostrarDialogoAlbum(existente, null, null, null, null, null);
+    }
+
+    private Album mostrarDialogoAlbum(Album existente, String nombreSugerido, Integer anioSugerido,
+            Artista artistaSugerido, File portadaSugerida, String nombreArtistaExternoSugerido) {
         ArtistaController controladorArtistas = ventanaPrincipal.getArtistaController();
         List<Artista> artistasDisponibles = controladorArtistas.obtenerTodos();
         if (artistasDisponibles.isEmpty()) {
@@ -319,7 +660,11 @@ public class PanelAlbums extends JPanel {
         }
 
         CampoTextoRedondeado campoNombre = new CampoTextoRedondeado("");
-        campoNombre.setText(existente == null ? "" : existente.getNombre());
+        if (existente != null) {
+            campoNombre.setText(existente.getNombre());
+        } else if (nombreSugerido != null) {
+            campoNombre.setText(nombreSugerido);
+        }
         campoNombre.setPreferredSize(new Dimension(320, 36));
         campoNombre.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
@@ -341,21 +686,44 @@ public class PanelAlbums extends JPanel {
         comboArtistas.setBorder(new LineBorder(TemaVisual.BORDE_ACENTO, 1, true));
         comboArtistas.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
         comboArtistas.setAlignmentX(Component.LEFT_ALIGNMENT);
-        if (existente != null) {
+        JLabel etiquetaAvisoArtista = new JLabel(" ");
+        etiquetaAvisoArtista.setFont(new Font("Serif", Font.BOLD, 12));
+        etiquetaAvisoArtista.setForeground(TemaVisual.TEXTO_SECUNDARIO);
+        etiquetaAvisoArtista.setAlignmentX(Component.LEFT_ALIGNMENT);
+        String nombreArtistaExternoExistente = existente == null ? null : existente.getNombreArtistaSugerido();
+        if (existente != null && existente.getArtista() != null) {
             comboArtistas.setSelectedItem(existente.getArtista());
+        } else if (existente != null) {
+            comboArtistas.setSelectedIndex(-1);
+            etiquetaAvisoArtista.setText(nombreArtistaExternoExistente != null
+                    ? "Este álbum es de \"" + nombreArtistaExternoExistente + "\", que todavía no está en tu lista local. Seleccioná uno o creálo primero."
+                    : "Este álbum todavía no tiene artista asignado. Seleccioná uno si querés asignarlo ahora.");
+        } else if (artistaSugerido != null) {
+            comboArtistas.setSelectedItem(artistaSugerido);
+        } else if (nombreArtistaExternoSugerido != null) {
+            comboArtistas.setSelectedIndex(-1);
+            etiquetaAvisoArtista.setText("No se encontró a \"" + nombreArtistaExternoSugerido
+                    + "\" en tu lista local. Seleccioná uno o cancelá para crearlo primero.");
         }
 
         CampoTextoRedondeado campoAnio = new CampoTextoRedondeado("");
-        campoAnio.setText(
-                existente == null ? String.valueOf(LocalDate.now().getYear()) : String.valueOf(existente.getAnioLanzamiento()));
+        if (existente != null) {
+            campoAnio.setText(String.valueOf(existente.getAnioLanzamiento()));
+        } else if (anioSugerido != null) {
+            campoAnio.setText(String.valueOf(anioSugerido));
+        } else {
+            campoAnio.setText(String.valueOf(LocalDate.now().getYear()));
+        }
         campoAnio.setPreferredSize(new Dimension(320, 36));
         campoAnio.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
 
-        JLabel etiquetaPortada = new JLabel(existente == null || existente.getRutaPortada() == null ? "Sin portada"
-                : new File(existente.getRutaPortada()).getName());
+        JLabel etiquetaPortada = new JLabel();
+        etiquetaPortada.setText(existente != null && existente.getRutaPortada() != null
+                ? new File(existente.getRutaPortada()).getName()
+                : portadaSugerida != null ? portadaSugerida.getName() : "Sin portada");
         etiquetaPortada.setFont(new Font("Serif", Font.BOLD, 14));
         etiquetaPortada.setForeground(TemaVisual.TEXTO_CLARO);
-        final File[] archivoPortadaSeleccionado = new File[1];
+        final File[] archivoPortadaSeleccionado = new File[] { portadaSugerida };
         BotonRedondeado botonSeleccionarPortada = new BotonRedondeado("Seleccionar Portada", TemaVisual.BOTON_FONDO,
                 TemaVisual.BOTON_TEXTO);
         botonSeleccionarPortada.addActionListener(evento -> {
@@ -382,6 +750,7 @@ public class PanelAlbums extends JPanel {
         panel.add(Box.createVerticalStrut(12));
         panel.add(DialogoUtil.crearEtiquetaCampo("Artista:"));
         panel.add(comboArtistas);
+        panel.add(etiquetaAvisoArtista);
         panel.add(Box.createVerticalStrut(12));
         panel.add(DialogoUtil.crearEtiquetaCampo("Año de lanzamiento:"));
         panel.add(campoAnio);
@@ -405,6 +774,11 @@ public class PanelAlbums extends JPanel {
             }
 
             Album album = new Album(id, campoNombre.getText(), artistaSeleccionado, anio, rutaPortada);
+            if (artistaSeleccionado == null) {
+                String nombreSugeridoFinal = nombreArtistaExternoSugerido != null ? nombreArtistaExternoSugerido
+                        : nombreArtistaExternoExistente;
+                album.setNombreArtistaSugerido(nombreSugeridoFinal);
+            }
             if (existente != null) {
                 for (Cancion cancion : existente.getCanciones()) {
                     album.agregarCancion(cancion);
