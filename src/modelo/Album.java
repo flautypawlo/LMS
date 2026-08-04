@@ -10,6 +10,7 @@ public class Album {
     private int id;
     private String nombre;
     private Artista artista;
+    private String nombreArtistaSugerido;
     private int anioLanzamiento;
     private String rutaPortada;
     private List<Cancion> canciones;
@@ -50,10 +51,33 @@ public class Album {
     }
 
     public void setArtista(Artista artista) {
-        if (artista == null) {
-            throw new IllegalArgumentException("El álbum debe tener un artista asociado.");
-        }
         this.artista = artista;
+    }
+
+    /**
+     * Nombre del artista tal como vino de una fuente externa (ej: MusicBrainz),
+     * usado solo para mostrar cuando el álbum todavía no tiene un Artista real
+     * asociado (artista == null). No reemplaza al Artista registrado.
+     */
+    public String getNombreArtistaSugerido() {
+        return nombreArtistaSugerido;
+    }
+
+    public void setNombreArtistaSugerido(String nombreArtistaSugerido) {
+        this.nombreArtistaSugerido = nombreArtistaSugerido == null || nombreArtistaSugerido.trim().isEmpty() ? null
+                : nombreArtistaSugerido.trim();
+    }
+
+    /**
+     * Nombre del artista para mostrar en pantalla: el del Artista registrado si
+     * existe, o el sugerido (externo, sin registrar) si no. Puede ser null si
+     * no se sabe nada del artista.
+     */
+    public String obtenerNombreArtistaParaMostrar() {
+        if (artista != null) {
+            return artista.getNombre();
+        }
+        return nombreArtistaSugerido;
     }
 
     public int getAnioLanzamiento() {

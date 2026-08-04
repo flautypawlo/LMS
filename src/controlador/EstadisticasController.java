@@ -98,7 +98,7 @@ public class EstadisticasController {
         double suma = 0.0;
         int cantidad = 0;
         for (Album album : albumes) {
-            if (album.getArtista().getId() == artista.getId() && album.getNotaPromedio() > 0.0) {
+            if (album.getArtista() != null && album.getArtista().getId() == artista.getId() && album.getNotaPromedio() > 0.0) {
                 suma += album.getNotaPromedio();
                 cantidad++;
             }

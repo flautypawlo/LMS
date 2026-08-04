@@ -122,6 +122,23 @@ public final class JsonUtil {
         return resultado;
     }
 
+    /**
+     * Parsea un JSON cuyo nivel superior es un objeto (no una lista), como las
+     * respuestas de APIs externas (por ejemplo MusicBrainz).
+     */
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> jsonAMapa(String json) {
+        if (json == null || json.trim().isEmpty()) {
+            return new LinkedHashMap<>();
+        }
+        AnalizadorJson analizador = new AnalizadorJson(json);
+        Object valor = analizador.analizarValor();
+        if (valor instanceof Map) {
+            return (Map<String, Object>) valor;
+        }
+        return new LinkedHashMap<>();
+    }
+
     // ---------- HELPERS DE LECTURA SEGURA ----------
 
     public static String getString(Map<String, Object> mapa, String clave) {

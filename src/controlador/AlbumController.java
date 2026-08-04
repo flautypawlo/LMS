@@ -41,7 +41,7 @@ public class AlbumController {
     public synchronized List<Album> obtenerPorArtista(int artistaId) {
         List<Album> resultado = new ArrayList<>();
         for (Album album : albumes) {
-            if (album.getArtista().getId() == artistaId) {
+            if (album.getArtista() != null && album.getArtista().getId() == artistaId) {
                 resultado.add(album);
             }
         }
@@ -90,7 +90,7 @@ public class AlbumController {
     }
 
     public synchronized void agregar(Album album) throws IOException {
-        validarNoDuplicado(album.getNombre(), album.getArtista().getId(), -1);
+        validarNoDuplicado(album.getNombre(), album.getArtista() == null ? null : album.getArtista().getId(), -1);
         albumes.add(album);
         guardarTodo();
     }
@@ -100,7 +100,7 @@ public class AlbumController {
         if (existente == null) {
             throw new IllegalArgumentException("El álbum no existe.");
         }
-        validarNoDuplicado(album.getNombre(), album.getArtista().getId(), album.getId());
+        validarNoDuplicado(album.getNombre(), album.getArtista() == null ? null : album.getArtista().getId(), album.getId());
         int indice = albumes.indexOf(existente);
         albumes.set(indice, album);
         guardarTodo();
@@ -175,9 +175,13 @@ public class AlbumController {
         return null;
     }
 
-    private void validarNoDuplicado(String nombre, int artistaId, int idAExcluir) {
+    private void validarNoDuplicado(String nombre, Integer artistaId, int idAExcluir) {
+        if (artistaId == null) {
+            return;
+        }
         for (Album album : albumes) {
             if (album.getId() != idAExcluir
+                    && album.getArtista() != null
                     && album.getArtista().getId() == artistaId
                     && album.getNombre().equalsIgnoreCase(nombre)) {
                 throw new IllegalArgumentException("Ya existe un álbum con ese nombre para este artista.");

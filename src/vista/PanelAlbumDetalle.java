@@ -80,9 +80,12 @@ public class PanelAlbumDetalle extends JPanel {
         JPanel panelDerecho = new JPanel(new BorderLayout(0, 12));
         panelDerecho.setOpaque(false);
 
-        JPanel panelEncabezado = new JPanel(new BorderLayout(0, 8)); 
+        // --- INICIO DE LOS CAMBIOS ---
+        // Cambiamos a BorderLayout para tener control total de la alineación izquierda
+        JPanel panelEncabezado = new JPanel(new BorderLayout(0, 8)); // 8 de separación vertical
         panelEncabezado.setOpaque(false);
-
+        
+        // Ponemos el Título en el NORTH (se ancla arriba a la izquierda por defecto)
         panelEncabezado.add(etiquetaTituloArtista, BorderLayout.NORTH);
 
         JPanel filaSubtitulo = new JPanel(new BorderLayout());
@@ -104,7 +107,10 @@ public class PanelAlbumDetalle extends JPanel {
         panelNotaAlbum.add(badgeNotaAlbum);
         filaSubtitulo.add(panelNotaAlbum, BorderLayout.EAST);
 
+        // Ponemos el Subtítulo en el CENTER (se ubica justo debajo del título)
         panelEncabezado.add(filaSubtitulo, BorderLayout.CENTER);
+        
+        // --- FIN DE LOS CAMBIOS ---
 
         panelDerecho.add(panelEncabezado, BorderLayout.NORTH);
 
@@ -266,7 +272,10 @@ public class PanelAlbumDetalle extends JPanel {
         if (albumActual == null) {
             return;
         }
-        etiquetaTituloArtista.setText(albumActual.getNombre() + " - " + albumActual.getArtista().getNombre());
+        String nombreArtistaMostrar = albumActual.obtenerNombreArtistaParaMostrar();
+        String nombreArtista = nombreArtistaMostrar == null ? "Sin artista asignado"
+                : albumActual.getArtista() == null ? nombreArtistaMostrar + " (sin registrar)" : nombreArtistaMostrar;
+        etiquetaTituloArtista.setText(albumActual.getNombre() + " - " + nombreArtista);
         etiquetaAnioCantidad.setText(
                 albumActual.getAnioLanzamiento() + " - Cantidad de canciones: " + albumActual.getCantidadCanciones());
         etiquetaNotaAlbumValor.setText(albumActual.getNotaPromedioTexto());

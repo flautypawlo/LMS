@@ -42,7 +42,8 @@ public class ArchivoAlbum {
         Map<String, Object> mapa = new LinkedHashMap<>();
         mapa.put("id", album.getId());
         mapa.put("nombre", album.getNombre());
-        mapa.put("artistaId", album.getArtista().getId());
+        mapa.put("artistaId", album.getArtista() == null ? null : album.getArtista().getId());
+        mapa.put("nombreArtistaSugerido", album.getNombreArtistaSugerido());
         mapa.put("anioLanzamiento", album.getAnioLanzamiento());
         mapa.put("rutaPortada", album.getRutaPortada());
         return mapa;
@@ -51,14 +52,13 @@ public class ArchivoAlbum {
     private Album mapaAAlbum(Map<String, Object> mapa, List<Artista> artistasDisponibles) {
         int id = JsonUtil.getInt(mapa, "id");
         String nombre = JsonUtil.getString(mapa, "nombre");
-        int artistaId = JsonUtil.getInt(mapa, "artistaId");
         int anioLanzamiento = JsonUtil.getInt(mapa, "anioLanzamiento");
         String rutaPortada = JsonUtil.getString(mapa, "rutaPortada");
-        Artista artista = buscarArtistaPorId(artistasDisponibles, artistaId);
-        if (artista == null) {
-            return null;
-        }
-        return new Album(id, nombre, artista, anioLanzamiento, rutaPortada);
+        String artistaIdTexto = JsonUtil.getString(mapa, "artistaId");
+        Artista artista = artistaIdTexto == null ? null : buscarArtistaPorId(artistasDisponibles, JsonUtil.getInt(mapa, "artistaId"));
+        Album album = new Album(id, nombre, artista, anioLanzamiento, rutaPortada);
+        album.setNombreArtistaSugerido(JsonUtil.getString(mapa, "nombreArtistaSugerido"));
+        return album;
     }
 
     private Artista buscarArtistaPorId(List<Artista> artistas, int id) {
