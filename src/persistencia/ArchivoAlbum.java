@@ -53,7 +53,7 @@ public class ArchivoAlbum {
         int id = JsonUtil.getInt(mapa, "id");
         String nombre = JsonUtil.getString(mapa, "nombre");
         int anioLanzamiento = JsonUtil.getInt(mapa, "anioLanzamiento");
-        String rutaPortada = JsonUtil.getString(mapa, "rutaPortada");
+        String rutaPortada = Config.normalizarRuta(JsonUtil.getString(mapa, "rutaPortada"));
         String artistaIdTexto = JsonUtil.getString(mapa, "artistaId");
         Artista artista = artistaIdTexto == null ? null : buscarArtistaPorId(artistasDisponibles, JsonUtil.getInt(mapa, "artistaId"));
         Album album = new Album(id, nombre, artista, anioLanzamiento, rutaPortada);
