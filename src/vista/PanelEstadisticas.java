@@ -1,4 +1,4 @@
-package vista;
+/*package vista;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -96,4 +96,4 @@ public class PanelEstadisticas extends JPanel {
         etiquetaTotalAlbumes.setText("Cantidad total de álbumes: " + controlador.getCantidadAlbumes());
         etiquetaTotalCanciones.setText("Cantidad total de canciones: " + controlador.getCantidadCanciones());
     }
-}
+}*/

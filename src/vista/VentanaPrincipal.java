@@ -128,15 +128,15 @@ public class VentanaPrincipal extends JFrame {
         panelNavegacion.setOpaque(false);
         BotonRedondeado botonAlbums = new BotonRedondeado("Álbumes", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
         BotonRedondeado botonArtistas = new BotonRedondeado("Artistas", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
-        BotonRedondeado botonEstadisticas = new BotonRedondeado("Estadísticas", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
+        //BotonRedondeado botonEstadisticas = new BotonRedondeado("Estadísticas", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
 
         botonAlbums.addActionListener(evento -> mostrarAlbums());
         botonArtistas.addActionListener(evento -> mostrarArtistas());
-        botonEstadisticas.addActionListener(evento -> mostrarEstadisticas());
+        //botonEstadisticas.addActionListener(evento -> mostrarEstadisticas());
 
         panelNavegacion.add(botonAlbums);
         panelNavegacion.add(botonArtistas);
-        panelNavegacion.add(botonEstadisticas);
+        //panelNavegacion.add(botonEstadisticas);
         barra.add(panelNavegacion, BorderLayout.EAST);
 
         return barra;
@@ -184,7 +184,7 @@ public class VentanaPrincipal extends JFrame {
         return albumController;
     }
 
-    public EstadisticasController getEstadisticasController() {
+    /*public EstadisticasController getEstadisticasController() {
         return estadisticasController;
-    }
+    }*/
 }
