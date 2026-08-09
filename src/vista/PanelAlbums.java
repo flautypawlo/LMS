@@ -36,6 +36,7 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
@@ -136,14 +137,17 @@ public class PanelAlbums extends JPanel {
         BotonRedondeado botonAgregar = new BotonRedondeado("Agregar +", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
         BotonRedondeado botonModificar = new BotonRedondeado("Modificar", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
         BotonRedondeado botonEliminar = new BotonRedondeado("Borrar -", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
+        BotonRedondeado botonImprimirNota = new BotonRedondeado("Imprimir Nota", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
 
         botonAgregar.addActionListener(evento -> agregarConBusquedaMusicBrainz());
         botonModificar.addActionListener(evento -> modificar());
         botonEliminar.addActionListener(evento -> eliminar());
+        botonImprimirNota.addActionListener(evento -> imprimirNota());
 
         filaBotones.add(botonAgregar);
         filaBotones.add(botonModificar);
         filaBotones.add(botonEliminar);
+        filaBotones.add(botonImprimirNota);
         contenedor.add(filaBotones);
 
         campoBusqueda.getDocument().addDocumentListener(new DocumentListener() {
@@ -644,6 +648,97 @@ public class PanelAlbums extends JPanel {
             return;
         }
         ventanaPrincipal.mostrarAlbumDetalle(seleccionado.getId());
+    }
+
+    private void imprimirNota() {
+        Album seleccionado = listaAlbumes.getSelectedValue();
+        if (seleccionado == null) {
+            mostrarError("Seleccioná un álbum primero.");
+            return;
+        }
+        mostrarDialogoTextoCopiable("Nota del Álbum", construirTextoNotas(seleccionado));
+    }
+
+    private String construirTextoNotas(Album album) {
+        String nombreArtista = album.obtenerNombreArtistaParaMostrar();
+        if (nombreArtista == null) {
+            nombreArtista = "Artista desconocido";
+        }
+        StringBuilder texto = new StringBuilder();
+        texto.append(album.getNombre())
+                .append(" - ").append(nombreArtista)
+                .append(" - ").append(album.getAnioLanzamiento())
+                .append(" - Nota Promedio: ").append(album.getNotaPromedioTexto())
+                .append("\n\n");
+        for (Cancion cancion : album.getCanciones()) {
+            texto.append("* ").append(cancion.getNombre())
+                    .append(" - Nota: ").append(cancion.getNotaTexto())
+                    .append("\n");
+        }
+        return texto.toString();
+    }
+
+    private void mostrarDialogoTextoCopiable(String titulo, String texto) {
+        JTextArea areaTexto = new JTextArea(texto);
+        areaTexto.setEditable(false);
+        areaTexto.setLineWrap(true);
+        areaTexto.setWrapStyleWord(true);
+        areaTexto.setFont(new Font("Serif", Font.BOLD, 14));
+        areaTexto.setForeground(TemaVisual.TEXTO_CLARO);
+        areaTexto.setBackground(TemaVisual.FONDO_BADGE);
+        areaTexto.setCaretColor(TemaVisual.TEXTO_CLARO);
+        areaTexto.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+        areaTexto.setCaretPosition(0);
+
+        PanelRedondeado tarjetaTexto = new PanelRedondeado(TemaVisual.FONDO_BADGE, TemaVisual.BORDE_ACENTO, 14);
+        tarjetaTexto.setLayout(new BorderLayout());
+        tarjetaTexto.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        tarjetaTexto.setPreferredSize(new Dimension(440, 260));
+
+        JScrollPane scroll = new JScrollPane(areaTexto);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.setOpaque(false);
+        scroll.getViewport().setOpaque(true);
+        scroll.getViewport().setBackground(TemaVisual.FONDO_BADGE);
+        scroll.getVerticalScrollBar().setUI(new BarraDesplazamientoRedondeada());
+        scroll.getVerticalScrollBar().setPreferredSize(new Dimension(14, 0));
+        scroll.getVerticalScrollBar().setOpaque(false);
+        tarjetaTexto.add(scroll, BorderLayout.CENTER);
+
+        PanelRedondeado tarjeta = new PanelRedondeado(TemaVisual.FONDO_TARJETA, TemaVisual.BORDE_ACENTO, 22);
+        tarjeta.setLayout(new BorderLayout(0, 16));
+        tarjeta.setBorder(BorderFactory.createEmptyBorder(20, 25, 20, 25));
+
+        JLabel etiquetaTitulo = new JLabel(titulo, SwingConstants.CENTER);
+        etiquetaTitulo.setFont(new Font("Serif", Font.BOLD, 22));
+        etiquetaTitulo.setForeground(TemaVisual.TEXTO_CLARO);
+        tarjeta.add(etiquetaTitulo, BorderLayout.NORTH);
+        tarjeta.add(tarjetaTexto, BorderLayout.CENTER);
+
+        JOptionPane opcionPane = new JOptionPane(tarjeta, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null,
+                new Object[0]);
+        opcionPane.setBorder(BorderFactory.createEmptyBorder());
+        opcionPane.setBackground(TemaVisual.FONDO);
+        opcionPane.setOpaque(true);
+
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        panelBotones.setOpaque(false);
+        BotonRedondeado botonCopiar = new BotonRedondeado("Copiar", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
+        BotonRedondeado botonCerrar = new BotonRedondeado("Cerrar", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
+        botonCopiar.addActionListener(evento -> {
+            areaTexto.selectAll();
+            areaTexto.copy();
+            areaTexto.setCaretPosition(0);
+        });
+        botonCerrar.addActionListener(evento -> opcionPane.setValue(JOptionPane.CLOSED_OPTION));
+        panelBotones.add(botonCopiar);
+        panelBotones.add(botonCerrar);
+        tarjeta.add(panelBotones, BorderLayout.SOUTH);
+
+        JDialog dialogo = opcionPane.createDialog(this, titulo);
+        dialogo.getContentPane().setBackground(TemaVisual.FONDO);
+        dialogo.setResizable(true);
+        dialogo.setVisible(true);
     }
 
     private Album mostrarDialogoAlbum(Album existente) {
