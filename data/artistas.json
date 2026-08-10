@@ -6,6 +6,5 @@
   {"id":5,"nombre":"Pescado Rabioso","tipo":"Banda","integrantes":["Luis Alberto Spinetta","Black Amaya","Carlos Cutaia","David Lebón","Osvaldo Frascino"]},
   {"id":6,"nombre":"Michael Jackson","tipo":"Solista","fechaNacimiento":"1958-08-29","fechaFallecimiento":"2009-06-25","paisNacimiento":"Estados Unidos"},
   {"id":7,"nombre":"Banatroll","tipo":"Solista","fechaNacimiento":"2000-11-14","fechaFallecimiento":null,"paisNacimiento":"Argentina"},
-  {"id":8,"nombre":"Deep Purple","tipo":"Banda","integrantes":["Ian Paice","Ian Gillan","Roger Glover","Don Airey","Simon McBride","Jon Lord","Ritchie Blackmore","Rod Evans","Nick Simper","Glenn Hughes","David Coverdale","Tommy Bolin","Joe Lynn Turner","Joe Satriani","Steve Morse"]},
   {"id":9,"nombre":"Kanye West","tipo":"Solista","fechaNacimiento":"1977-06-08","fechaFallecimiento":null,"paisNacimiento":"Estados Unidos"}
 ]
