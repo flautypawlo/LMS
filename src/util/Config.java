@@ -6,6 +6,7 @@ public final class Config {
 
     private static final String DIRECTORIO_DATOS = "data";
     private static final String DIRECTORIO_PORTADAS = "data/portadas";
+    private static final String DIRECTORIO_EXPORTADOS = "data/exportados";
 
     public static final String ARCHIVO_ARTISTAS = normalizarRuta(DIRECTORIO_DATOS + "/artistas.json");
     public static final String ARCHIVO_ALBUMS = normalizarRuta(DIRECTORIO_DATOS + "/albums.json");
@@ -19,6 +20,10 @@ public final class Config {
         return normalizarRuta(DIRECTORIO_PORTADAS);
     }
 
+    public static String getRutaExportados() {
+        return normalizarRuta(DIRECTORIO_EXPORTADOS);
+    }
+
     public static void inicializarDirectorios() {
         File directorioDatos = new File(normalizarRuta(DIRECTORIO_DATOS));
         if (!directorioDatos.exists()) {
@@ -27,6 +32,10 @@ public final class Config {
         File directorioPortadas = new File(normalizarRuta(DIRECTORIO_PORTADAS));
         if (!directorioPortadas.exists()) {
             directorioPortadas.mkdirs();
+        }
+        File directorioExportados = new File(normalizarRuta(DIRECTORIO_EXPORTADOS));
+        if (!directorioExportados.exists()) {
+            directorioExportados.mkdirs();
         }
     }
 

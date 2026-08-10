@@ -138,16 +138,19 @@ public class PanelAlbums extends JPanel {
         BotonRedondeado botonModificar = new BotonRedondeado("Modificar", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
         BotonRedondeado botonEliminar = new BotonRedondeado("Borrar -", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
         BotonRedondeado botonImprimirNota = new BotonRedondeado("Imprimir Nota", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
+        BotonRedondeado botonImprimirImagen = new BotonRedondeado("Imprimir Imagen", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
 
         botonAgregar.addActionListener(evento -> agregarConBusquedaMusicBrainz());
         botonModificar.addActionListener(evento -> modificar());
         botonEliminar.addActionListener(evento -> eliminar());
         botonImprimirNota.addActionListener(evento -> imprimirNota());
+        botonImprimirImagen.addActionListener(evento -> imprimirImagen());
 
         filaBotones.add(botonAgregar);
         filaBotones.add(botonModificar);
         filaBotones.add(botonEliminar);
         filaBotones.add(botonImprimirNota);
+        filaBotones.add(botonImprimirImagen);
         contenedor.add(filaBotones);
 
         campoBusqueda.getDocument().addDocumentListener(new DocumentListener() {
@@ -648,6 +651,22 @@ public class PanelAlbums extends JPanel {
             return;
         }
         ventanaPrincipal.mostrarAlbumDetalle(seleccionado.getId());
+    }
+
+    private void imprimirImagen() {
+        Album seleccionado = listaAlbumes.getSelectedValue();
+        if (seleccionado == null) {
+            mostrarError("Seleccioná un álbum primero.");
+            return;
+        }
+        try {
+            File archivoGenerado = GeneradorImagenNota.generarImagen(seleccionado);
+            JOptionPane.showMessageDialog(this,
+                    "Imagen guardada en:\n" + archivoGenerado.getAbsolutePath(),
+                    "Imagen generada", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException excepcion) {
+            mostrarError("No se pudo generar la imagen: " + excepcion.getMessage());
+        }
     }
 
     private void imprimirNota() {
