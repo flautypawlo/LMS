@@ -3,6 +3,7 @@ package vista;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -661,11 +662,73 @@ public class PanelAlbums extends JPanel {
         }
         try {
             File archivoGenerado = GeneradorImagenNota.generarImagen(seleccionado);
-            JOptionPane.showMessageDialog(this,
-                    "Imagen guardada en:\n" + archivoGenerado.getAbsolutePath(),
-                    "Imagen generada", JOptionPane.INFORMATION_MESSAGE);
+            mostrarDialogoImagenGenerada(archivoGenerado);
         } catch (IOException excepcion) {
             mostrarError("No se pudo generar la imagen: " + excepcion.getMessage());
+        }
+    }
+
+    private void mostrarDialogoImagenGenerada(File archivoGenerado) {
+        JLabel etiquetaMensaje = new JLabel(
+                "<html>Imagen guardada en:<br>" + archivoGenerado.getAbsolutePath() + "</html>");
+        etiquetaMensaje.setFont(new Font("Serif", Font.BOLD, 14));
+        etiquetaMensaje.setForeground(TemaVisual.TEXTO_CLARO);
+
+        JPanel panelMensaje = new JPanel(new BorderLayout());
+        panelMensaje.setOpaque(false);
+        panelMensaje.add(etiquetaMensaje, BorderLayout.CENTER);
+        panelMensaje.setPreferredSize(new Dimension(420, 70));
+
+        PanelRedondeado tarjeta = new PanelRedondeado(TemaVisual.FONDO_TARJETA, TemaVisual.BORDE_ACENTO, 22);
+        tarjeta.setLayout(new BorderLayout(0, 16));
+        tarjeta.setBorder(BorderFactory.createEmptyBorder(20, 25, 20, 25));
+
+        JLabel etiquetaTitulo = new JLabel("Imagen generada", SwingConstants.CENTER);
+        etiquetaTitulo.setFont(new Font("Serif", Font.BOLD, 22));
+        etiquetaTitulo.setForeground(TemaVisual.TEXTO_CLARO);
+        tarjeta.add(etiquetaTitulo, BorderLayout.NORTH);
+        tarjeta.add(panelMensaje, BorderLayout.CENTER);
+
+        JOptionPane opcionPane = new JOptionPane(tarjeta, JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null,
+                new Object[0]);
+        opcionPane.setBorder(BorderFactory.createEmptyBorder());
+        opcionPane.setBackground(TemaVisual.FONDO);
+        opcionPane.setOpaque(true);
+
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        panelBotones.setOpaque(false);
+        BotonRedondeado botonAbrirCarpeta = new BotonRedondeado("Abrir Carpeta", TemaVisual.BOTON_FONDO,
+                TemaVisual.BOTON_TEXTO);
+        BotonRedondeado botonCerrar = new BotonRedondeado("Cerrar", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
+        botonAbrirCarpeta.addActionListener(evento -> abrirCarpetaContenedora(archivoGenerado));
+        botonCerrar.addActionListener(evento -> opcionPane.setValue(JOptionPane.CLOSED_OPTION));
+        panelBotones.add(botonAbrirCarpeta);
+        panelBotones.add(botonCerrar);
+        tarjeta.add(panelBotones, BorderLayout.SOUTH);
+
+        JDialog dialogo = opcionPane.createDialog(this, "Imagen generada");
+        dialogo.getContentPane().setBackground(TemaVisual.FONDO);
+        dialogo.setResizable(true);
+        dialogo.setVisible(true);
+    }
+
+    /**
+     * Abre la carpeta que contiene el archivo en el explorador de archivos del
+     * sistema operativo (Explorador en Windows, Finder en Mac, el gestor de
+     * archivos que corresponda en Linux). java.awt.Desktop se encarga de elegir
+     * el programa correcto según el sistema operativo.
+     */
+    private void abrirCarpetaContenedora(File archivo) {
+        File carpeta = archivo.getParentFile();
+        try {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                Desktop.getDesktop().open(carpeta);
+            } else {
+                mostrarError("Tu sistema no permite abrir carpetas automáticamente. La carpeta es:\n"
+                        + carpeta.getAbsolutePath());
+            }
+        } catch (IOException excepcion) {
+            mostrarError("No se pudo abrir la carpeta: " + excepcion.getMessage());
         }
     }
 
