@@ -23,7 +23,7 @@ import util.Config;
  */
 public final class GeneradorImagenNota {
 
-    private static final int ANCHO_LIENZO = 920;
+    private static final int ANCHO_LIENZO = 1120; // Ampliado para evitar solapamientos con textos largos
     private static final int MARGEN = 40;
     private static final int TAMANIO_PORTADA = 380;
     private static final int ALTO_FILA_CANCION = 42;
@@ -65,24 +65,36 @@ public final class GeneradorImagenNota {
         graficos.setStroke(new BasicStroke(2f));
         graficos.drawRect(MARGEN, yPortada, TAMANIO_PORTADA, TAMANIO_PORTADA);
 
-        graficos.setFont(new Font("Serif", Font.BOLD, 26));
-        graficos.drawString(titulo, columnaDerechaX, yPortada);
+        // Título del álbum
+        Font fuenteTitulo = new Font("Serif", Font.BOLD, 26);
+        Font fuenteNotaAlbum = new Font("Serif", Font.BOLD, 16);
+        int anchoNotaAlbum = calcularAnchoTotalNota(graficos, "Nota:", album.getNotaPromedioTexto(), fuenteNotaAlbum);
+        int espacioDispTitulo = (ANCHO_LIENZO - MARGEN) - columnaDerechaX - anchoNotaAlbum - 20;
+
+        graficos.setFont(fuenteTitulo);
+        graficos.drawString(recortarTexto(graficos, titulo, espacioDispTitulo), columnaDerechaX, yPortada);
 
         graficos.setFont(new Font("Serif", Font.BOLD, 14));
         graficos.drawString(subtitulo, columnaDerechaX, yPortada + 25);
-        dibujarNotaConCaja(graficos, "Nota:", album.getNotaPromedioTexto(), new Font("Serif", Font.BOLD, 16), yPortada,
-                26);
+        dibujarNotaConCaja(graficos, "Nota:", album.getNotaPromedioTexto(), fuenteNotaAlbum, yPortada, 26);
 
         int yFila = yPortada + 65;
         Font fuenteCancion = new Font("Serif", Font.BOLD, 15);
         Font fuenteNota = new Font("Serif", Font.BOLD, 14);
+
         for (Cancion cancion : album.getCanciones()) {
+            String textoNota = cancion.getNotaTexto();
+            int anchoNotaCancion = calcularAnchoTotalNota(graficos, "Nota:", textoNota, fuenteNota);
+            int espacioDispCancion = (ANCHO_LIENZO - MARGEN) - columnaDerechaX - anchoNotaCancion - 20;
+
             graficos.setFont(fuenteCancion);
             graficos.setColor(Color.BLACK);
             String textoCancion = cancion.getNombre() + " - " + cancion.getDuracionFormateada();
-            graficos.drawString(textoCancion, columnaDerechaX, yFila);
+            String textoCancionAjustado = recortarTexto(graficos, textoCancion, espacioDispCancion);
+            
+            graficos.drawString(textoCancionAjustado, columnaDerechaX, yFila);
 
-            dibujarNotaConCaja(graficos, "Nota:", cancion.getNotaTexto(), fuenteNota, yFila - 14, 24);
+            dibujarNotaConCaja(graficos, "Nota:", textoNota, fuenteNota, yFila - 14, 24);
 
             yFila += ALTO_FILA_CANCION;
         }
@@ -104,7 +116,7 @@ public final class GeneradorImagenNota {
 
     /**
      * Dibuja "Etiqueta: [valor]" con el valor dentro de una caja fina, alineado
-     * al margen derecho del lienzo, imitando el estilo de la app.
+     * al margen derecho del lienzo.
      */
     private static void dibujarNotaConCaja(Graphics2D graficos, String etiqueta, String valor, Font fuente,
             int yBase, int altoCaja) {
@@ -125,6 +137,39 @@ public final class GeneradorImagenNota {
         graficos.drawString(textoEtiqueta, xEtiqueta, yBase);
         graficos.drawRect(xCaja, yCaja, anchoCaja, altoCaja);
         graficos.drawString(valor, xCaja + paddingCaja, yBase);
+    }
+
+    /**
+     * Calcula el ancho total que ocupa el texto de la etiqueta más la caja de la nota.
+     */
+    private static int calcularAnchoTotalNota(Graphics2D graficos, String etiqueta, String valor, Font fuente) {
+        graficos.setFont(fuente);
+        FontMetrics metricas = graficos.getFontMetrics();
+        int anchoValor = metricas.stringWidth(valor);
+        int paddingCaja = 10;
+        int anchoCaja = anchoValor + paddingCaja * 2;
+        int anchoEtiqueta = metricas.stringWidth(etiqueta + " ");
+        return anchoCaja + anchoEtiqueta;
+    }
+
+    /**
+     * Recorta una cadena de texto y le añade "..." si supera el ancho máximo disponible.
+     */
+    private static String recortarTexto(Graphics2D graficos, String texto, int anchoMaximo) {
+        FontMetrics metricas = graficos.getFontMetrics();
+        if (metricas.stringWidth(texto) <= anchoMaximo) {
+            return texto;
+        }
+
+        String elipsis = "...";
+        int anchoElipsis = metricas.stringWidth(elipsis);
+        String recortado = texto;
+
+        while (recortado.length() > 0 && (metricas.stringWidth(recortado) + anchoElipsis) > anchoMaximo) {
+            recortado = recortado.substring(0, recortado.length() - 1);
+        }
+
+        return recortado + elipsis;
     }
 
     private static BufferedImage cargarPortadaOriginal(String rutaPortada) {
