@@ -1,4 +1,4 @@
-    import vista.VentanaPrincipal;
+import vista.VentanaPrincipal;
 
 public class Main {
 
