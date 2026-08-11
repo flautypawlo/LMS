@@ -106,7 +106,7 @@ public class VentanaPrincipal extends JFrame {
         panelLogo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         JLabel etiquetaIcono = new JLabel(cargarIconoLogo());
-        JLabel etiquetaTexto = new JLabel("LMS");
+        JLabel etiquetaTexto = new JLabel("");
         etiquetaTexto.setFont(new Font("Serif", Font.BOLD, 26));
         etiquetaTexto.setForeground(TemaVisual.TEXTO_CLARO);
 
@@ -143,7 +143,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     private ImageIcon cargarIconoLogo() {
-        ImageIcon icono = ImagenUtil.cargarEscalada(Config.RUTA_LOGO, 40, 40);
+        ImageIcon icono = ImagenUtil.cargarEscalada(Config.RUTA_LOGO, 65, 45);
         return icono == null ? new ImageIcon() : icono;
     }
 
