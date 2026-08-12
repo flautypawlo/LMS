@@ -1,6 +1,5 @@
 package vista;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -9,6 +8,8 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -17,89 +18,154 @@ import modelo.Cancion;
 import util.Config;
 
 /**
- * Genera una imagen JPG en blanco y negro con la portada del álbum (convertida
- * a grises) y el detalle de sus canciones con sus notas, para "imprimir" en
- * una imagen que se pueda compartir o guardar aparte de la app.
+ * Genera una imagen JPG estilo "factura/recibo", con la portada del álbum a color,
+ * título, artista y año en negrita, listado de canciones con su nota alineada y la
+ * nota final del álbum.
  */
 public final class GeneradorImagenNota {
 
-    private static final int ANCHO_LIENZO = 1120; // Ampliado para evitar solapamientos con textos largos
-    private static final int MARGEN = 40;
-    private static final int TAMANIO_PORTADA = 380;
-    private static final int ALTO_FILA_CANCION = 42;
-    private static final int ESPACIO_ENTRE_PORTADA_Y_TEXTO = 40;
+    private static final int ANCHO_LIENZO = 700;
+    private static final int MARGEN = 32;
+    private static final int TAMANIO_PORTADA = 130;
+    private static final int ESPACIO_PORTADA_TITULO = 24;
+    private static final int INDENTACION_CANCIONES = 18;
+    private static final int ANCHO_COLUMNA_NOTA = 90;
+
+    private static final Font FUENTE_TITULO = new Font("SansSerif", Font.BOLD, 25);
+    private static final Font FUENTE_ARTISTA = new Font("SansSerif", Font.BOLD, 18);
+    private static final Font FUENTE_ANIO = new Font("SansSerif", Font.BOLD, 18);
+    private static final Font FUENTE_SEPARADOR = new Font("SansSerif", Font.BOLD, 14);
+    private static final Font FUENTE_CANCION = new Font("SansSerif", Font.BOLD, 15);
+    private static final Font FUENTE_NOTA = new Font("SansSerif", Font.BOLD, 15);
+    private static final Font FUENTE_NOTA_FINAL_ETIQUETA = new Font("SansSerif", Font.BOLD, 17);
+    private static final Font FUENTE_NOTA_FINAL_VALOR = new Font("SansSerif", Font.BOLD, 19);
 
     private GeneradorImagenNota() {
     }
 
     public static File generarImagen(Album album) throws IOException {
         BufferedImage portadaOriginal = cargarPortadaOriginal(album.getRutaPortada());
-        BufferedImage portadaGris = convertirAGrises(portadaOriginal, TAMANIO_PORTADA);
+        BufferedImage portadaEscalada = escalarPortada(portadaOriginal, TAMANIO_PORTADA);
 
         String nombreArtista = album.obtenerNombreArtistaParaMostrar();
         if (nombreArtista == null) {
             nombreArtista = "Artista desconocido";
         }
-        String titulo = album.getNombre() + " - " + nombreArtista;
-        String subtitulo = album.getAnioLanzamiento() + " - Cantidad de canciones: " + album.getCantidadCanciones();
 
-        int columnaDerechaX = MARGEN + TAMANIO_PORTADA + ESPACIO_ENTRE_PORTADA_Y_TEXTO;
-        int yPortada = 90;
+        // Lienzo de 1x1 solo para medir texto antes de saber el alto final real.
+        BufferedImage medidor = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
+        Graphics2D gMedicion = medidor.createGraphics();
+        gMedicion.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        int altoContenidoDerecha = 90 + (album.getCanciones().size() * ALTO_FILA_CANCION) + 30;
-        int altoLienzo = Math.max(yPortada + TAMANIO_PORTADA + MARGEN, altoContenidoDerecha + MARGEN);
+        int anchoTitulo = ANCHO_LIENZO - MARGEN - TAMANIO_PORTADA - ESPACIO_PORTADA_TITULO - MARGEN;
+        gMedicion.setFont(FUENTE_TITULO);
+        List<String> lineasTitulo = partirEnLineas(gMedicion, album.getNombre(), anchoTitulo);
 
-        BufferedImage lienzo = new BufferedImage(ANCHO_LIENZO, altoLienzo, BufferedImage.TYPE_INT_RGB);
-        Graphics2D graficos = lienzo.createGraphics();
-        graficos.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        graficos.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-
-        graficos.setColor(Color.WHITE);
-        graficos.fillRect(0, 0, ANCHO_LIENZO, altoLienzo);
-
-        graficos.setColor(Color.BLACK);
-        graficos.setFont(new Font("Serif", Font.ITALIC, 34));
-        graficos.drawString("LMS", MARGEN, MARGEN);
-
-        graficos.drawImage(portadaGris, MARGEN, yPortada, null);
-        graficos.setStroke(new BasicStroke(2f));
-        graficos.drawRect(MARGEN, yPortada, TAMANIO_PORTADA, TAMANIO_PORTADA);
-
-        // Título del álbum
-        Font fuenteTitulo = new Font("Serif", Font.BOLD, 26);
-        Font fuenteNotaAlbum = new Font("Serif", Font.BOLD, 16);
-        int anchoNotaAlbum = calcularAnchoTotalNota(graficos, "Nota:", album.getNotaPromedioTexto(), fuenteNotaAlbum);
-        int espacioDispTitulo = (ANCHO_LIENZO - MARGEN) - columnaDerechaX - anchoNotaAlbum - 20;
-
-        graficos.setFont(fuenteTitulo);
-        graficos.drawString(recortarTexto(graficos, titulo, espacioDispTitulo), columnaDerechaX, yPortada);
-
-        graficos.setFont(new Font("Serif", Font.BOLD, 14));
-        graficos.drawString(subtitulo, columnaDerechaX, yPortada + 25);
-        dibujarNotaConCaja(graficos, "Nota:", album.getNotaPromedioTexto(), fuenteNotaAlbum, yPortada, 26);
-
-        int yFila = yPortada + 65;
-        Font fuenteCancion = new Font("Serif", Font.BOLD, 15);
-        Font fuenteNota = new Font("Serif", Font.BOLD, 14);
-
+        int anchoTextoCancion = ANCHO_LIENZO - MARGEN - INDENTACION_CANCIONES - ANCHO_COLUMNA_NOTA - MARGEN;
+        gMedicion.setFont(FUENTE_CANCION);
+        List<List<String>> lineasPorCancion = new ArrayList<>();
         for (Cancion cancion : album.getCanciones()) {
-            String textoNota = cancion.getNotaTexto();
-            int anchoNotaCancion = calcularAnchoTotalNota(graficos, "Nota:", textoNota, fuenteNota);
-            int espacioDispCancion = (ANCHO_LIENZO - MARGEN) - columnaDerechaX - anchoNotaCancion - 20;
+            String textoCancion = cancion.getNombre() + " (" + cancion.getDuracionFormateada() + ")";
+            lineasPorCancion.add(partirEnLineas(gMedicion, textoCancion, anchoTextoCancion));
+        }
+        gMedicion.dispose();
 
-            graficos.setFont(fuenteCancion);
-            graficos.setColor(Color.BLACK);
-            String textoCancion = cancion.getNombre() + " - " + cancion.getDuracionFormateada();
-            String textoCancionAjustado = recortarTexto(graficos, textoCancion, espacioDispCancion);
-            
-            graficos.drawString(textoCancionAjustado, columnaDerechaX, yFila);
+        int altoLineaTitulo = 30;
+        int altoLineaCancion = 24;
 
-            dibujarNotaConCaja(graficos, "Nota:", textoNota, fuenteNota, yFila - 14, 24);
+        int y = MARGEN;
+        int yEncabezado = y;
+        int altoTextoTitulo = lineasTitulo.size() * altoLineaTitulo;
+        int altoEncabezado = Math.max(TAMANIO_PORTADA, altoTextoTitulo);
+        y = yEncabezado + altoEncabezado + 18;
 
-            yFila += ALTO_FILA_CANCION;
+        int yArtistaAnio = y;
+        y += 30;
+
+        int ySeparador1 = y;
+        y += 32;
+
+        List<Integer> yBaseCancion = new ArrayList<>();
+        for (List<String> lineas : lineasPorCancion) {
+            yBaseCancion.add(y);
+            y += Math.max(1, lineas.size()) * altoLineaCancion;
+        }
+        if (lineasPorCancion.isEmpty()) {
+            y += altoLineaCancion;
         }
 
-        graficos.dispose();
+        y += 40;
+        int ySeparador2 = y;
+        y += 34;
+
+        int yNotaFinal = y;
+        y += 20;
+
+        int altoLienzo = y + MARGEN;
+
+        BufferedImage lienzo = new BufferedImage(ANCHO_LIENZO, altoLienzo, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = lienzo.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, ANCHO_LIENZO, altoLienzo);
+        g.setColor(Color.BLACK);
+
+        // Portada a color con borde fino
+        g.drawImage(portadaEscalada, MARGEN, yEncabezado, null);
+        g.drawRect(MARGEN, yEncabezado, TAMANIO_PORTADA, TAMANIO_PORTADA);
+
+        // Título del álbum (una o más líneas), al lado de la portada
+        int xTitulo = MARGEN + TAMANIO_PORTADA + ESPACIO_PORTADA_TITULO;
+        g.setFont(FUENTE_TITULO);
+        int yLineaTitulo = yEncabezado + 22;
+        for (String linea : lineasTitulo) {
+            g.drawString(linea, xTitulo, yLineaTitulo);
+            yLineaTitulo += altoLineaTitulo;
+        }
+
+        // Artista - Año (ambos en negrita)
+        g.setFont(FUENTE_ARTISTA);
+        g.drawString(nombreArtista, MARGEN, yArtistaAnio);
+        FontMetrics metricasArtista = g.getFontMetrics();
+        int xAnio = MARGEN + metricasArtista.stringWidth(nombreArtista) + 10;
+        g.setFont(FUENTE_ANIO);
+        g.drawString("- " + album.getAnioLanzamiento(), xAnio, yArtistaAnio);
+
+        dibujarSeparador(g, ySeparador1);
+
+        // Canciones, con la nota alineada a la derecha de cada una
+        for (int i = 0; i < lineasPorCancion.size(); i++) {
+            List<String> lineas = lineasPorCancion.get(i);
+            int yBase = yBaseCancion.get(i);
+            g.setFont(FUENTE_CANCION);
+            int yLinea = yBase;
+            for (String linea : lineas) {
+                g.drawString(linea, MARGEN + INDENTACION_CANCIONES, yLinea);
+                yLinea += altoLineaCancion;
+            }
+
+            Cancion cancion = album.getCanciones().get(i);
+            g.setFont(FUENTE_NOTA);
+            String textoNota = formatearNota(cancion.getNotaTexto());
+            FontMetrics metricasNota = g.getFontMetrics();
+            int xNota = ANCHO_LIENZO - MARGEN - metricasNota.stringWidth(textoNota);
+            g.drawString(textoNota, xNota, yBase);
+        }
+
+        dibujarSeparador(g, ySeparador2);
+
+        // Nota final del álbum
+        g.setFont(FUENTE_NOTA_FINAL_ETIQUETA);
+        g.drawString("Nota final:", MARGEN, yNotaFinal);
+        g.setFont(FUENTE_NOTA_FINAL_VALOR);
+        String textoNotaFinal = formatearNota(album.getNotaPromedioTexto());
+        FontMetrics metricasNotaFinal = g.getFontMetrics();
+        int xNotaFinal = ANCHO_LIENZO - MARGEN - metricasNotaFinal.stringWidth(textoNotaFinal);
+        g.drawString(textoNotaFinal, xNotaFinal, yNotaFinal);
+
+        g.dispose();
 
         Config.inicializarDirectorios();
         File carpetaExportados = new File(Config.getRutaExportados());
@@ -115,61 +181,58 @@ public final class GeneradorImagenNota {
     }
 
     /**
-     * Dibuja "Etiqueta: [valor]" con el valor dentro de una caja fina, alineado
-     * al margen derecho del lienzo.
+     * Le agrega la terminación "/10.0" a la calificación obtenida.
      */
-    private static void dibujarNotaConCaja(Graphics2D graficos, String etiqueta, String valor, Font fuente,
-            int yBase, int altoCaja) {
-        graficos.setFont(fuente);
-        graficos.setColor(Color.BLACK);
-        FontMetrics metricas = graficos.getFontMetrics();
-
-        int anchoValor = metricas.stringWidth(valor);
-        int paddingCaja = 10;
-        int anchoCaja = anchoValor + paddingCaja * 2;
-        int xCaja = ANCHO_LIENZO - MARGEN - anchoCaja;
-        int yCaja = yBase - altoCaja + 6;
-
-        String textoEtiqueta = etiqueta + " ";
-        int anchoEtiqueta = metricas.stringWidth(textoEtiqueta);
-        int xEtiqueta = xCaja - anchoEtiqueta;
-
-        graficos.drawString(textoEtiqueta, xEtiqueta, yBase);
-        graficos.drawRect(xCaja, yCaja, anchoCaja, altoCaja);
-        graficos.drawString(valor, xCaja + paddingCaja, yBase);
+    private static String formatearNota(String notaRaw) {
+        if (notaRaw == null || notaRaw.trim().isEmpty() || notaRaw.equalsIgnoreCase("Sin calificar")) {
+            return "Sin calificar";
+        }
+        if (notaRaw.contains("/")) {
+            return notaRaw;
+        }
+        return notaRaw + " / 10,00";
     }
 
     /**
-     * Calcula el ancho total que ocupa el texto de la etiqueta más la caja de la nota.
+     * Dibuja una línea de asteriscos que ocupa todo el ancho del margen disponible.
      */
-    private static int calcularAnchoTotalNota(Graphics2D graficos, String etiqueta, String valor, Font fuente) {
-        graficos.setFont(fuente);
-        FontMetrics metricas = graficos.getFontMetrics();
-        int anchoValor = metricas.stringWidth(valor);
-        int paddingCaja = 10;
-        int anchoCaja = anchoValor + paddingCaja * 2;
-        int anchoEtiqueta = metricas.stringWidth(etiqueta + " ");
-        return anchoCaja + anchoEtiqueta;
+    private static void dibujarSeparador(Graphics2D g, int y) {
+        g.setFont(FUENTE_SEPARADOR);
+        FontMetrics metricas = g.getFontMetrics();
+        int anchoAsterisco = metricas.stringWidth("*");
+        int anchoDisponible = ANCHO_LIENZO - MARGEN * 2;
+        int cantidadAsteriscos = Math.max(1, anchoDisponible / anchoAsterisco);
+        StringBuilder linea = new StringBuilder();
+        for (int i = 0; i < cantidadAsteriscos; i++) {
+            linea.append('*');
+        }
+        g.drawString(linea.toString(), MARGEN, y);
     }
 
     /**
-     * Recorta una cadena de texto y le añade "..." si supera el ancho máximo disponible.
+     * Parte un texto en varias líneas para evitar superposiciones.
      */
-    private static String recortarTexto(Graphics2D graficos, String texto, int anchoMaximo) {
+    private static List<String> partirEnLineas(Graphics2D graficos, String texto, int anchoMaximo) {
+        List<String> lineas = new ArrayList<>();
         FontMetrics metricas = graficos.getFontMetrics();
-        if (metricas.stringWidth(texto) <= anchoMaximo) {
-            return texto;
+        String[] palabras = texto.split(" ");
+        StringBuilder lineaActual = new StringBuilder();
+        for (String palabra : palabras) {
+            String candidata = lineaActual.length() == 0 ? palabra : lineaActual + " " + palabra;
+            if (metricas.stringWidth(candidata) <= anchoMaximo || lineaActual.length() == 0) {
+                lineaActual = new StringBuilder(candidata);
+            } else {
+                lineas.add(lineaActual.toString());
+                lineaActual = new StringBuilder(palabra);
+            }
         }
-
-        String elipsis = "...";
-        int anchoElipsis = metricas.stringWidth(elipsis);
-        String recortado = texto;
-
-        while (recortado.length() > 0 && (metricas.stringWidth(recortado) + anchoElipsis) > anchoMaximo) {
-            recortado = recortado.substring(0, recortado.length() - 1);
+        if (lineaActual.length() > 0) {
+            lineas.add(lineaActual.toString());
         }
-
-        return recortado + elipsis;
+        if (lineas.isEmpty()) {
+            lineas.add("");
+        }
+        return lineas;
     }
 
     private static BufferedImage cargarPortadaOriginal(String rutaPortada) {
@@ -187,27 +250,25 @@ public final class GeneradorImagenNota {
         }
     }
 
-    private static BufferedImage convertirAGrises(BufferedImage original, int tamanio) {
+    /**
+     * Escala la portada manteniendo el formato RGB original (a color).
+     */
+    private static BufferedImage escalarPortada(BufferedImage original, int tamanio) {
         BufferedImage escalada = new BufferedImage(tamanio, tamanio, BufferedImage.TYPE_INT_RGB);
-        Graphics2D graficosEscalado = escalada.createGraphics();
-        graficosEscalado.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-        graficosEscalado.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        graficosEscalado.setColor(Color.LIGHT_GRAY);
-        graficosEscalado.fillRect(0, 0, tamanio, tamanio);
+        Graphics2D g = escalada.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, tamanio, tamanio);
         if (original != null) {
-            graficosEscalado.drawImage(original, 0, 0, tamanio, tamanio, null);
+            g.drawImage(original, 0, 0, tamanio, tamanio, null);
         } else {
-            graficosEscalado.setColor(Color.DARK_GRAY);
-            graficosEscalado.setFont(new Font("SansSerif", Font.BOLD, 16));
-            graficosEscalado.drawString("Sin portada", tamanio / 2 - 45, tamanio / 2);
+            g.setColor(Color.DARK_GRAY);
+            g.setFont(new Font("SansSerif", Font.BOLD, 13));
+            g.drawString("Sin portada", tamanio / 2 - 38, tamanio / 2);
         }
-        graficosEscalado.dispose();
-
-        BufferedImage gris = new BufferedImage(tamanio, tamanio, BufferedImage.TYPE_BYTE_GRAY);
-        Graphics2D graficosGris = gris.createGraphics();
-        graficosGris.drawImage(escalada, 0, 0, null);
-        graficosGris.dispose();
-        return gris;
+        g.dispose();
+        return escalada;
     }
 
     private static String limpiarNombreArchivo(String texto) {
