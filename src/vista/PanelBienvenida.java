@@ -25,7 +25,7 @@ public class PanelBienvenida extends JPanel {
                 "Bienvenido al sistema de gestión y calificación musical.\n\n"
                 + "Desde aquí podés administrar solistas y bandas, organizar sus álbumes "
                 + "y canciones, y calificar cada canción con una nota de 1.0 a 10.0.\n\n"
-                + "Utilizá el menú superior para navegar entre Álbumes, Artistas y Estadísticas. "
+                + "Utilizá el menú superior para navegar entre Álbumes y Artistas. "
                 + "En cualquier momento podés volver a esta pantalla presionando el logo.");
         areaDescripcion.setLineWrap(true);
         areaDescripcion.setWrapStyleWord(true);
