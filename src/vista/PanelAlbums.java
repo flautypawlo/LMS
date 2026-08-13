@@ -754,6 +754,7 @@ public class PanelAlbums extends JPanel {
                 .append("\n\n");
         for (Cancion cancion : album.getCanciones()) {
             texto.append("* ").append(cancion.getNombre())
+                    .append(" (").append(cancion.getDuracionFormateada()).append(")")
                     .append(" - Nota: ").append(cancion.getNotaTexto())
                     .append("\n");
         }
