@@ -19,8 +19,8 @@ import util.Config;
 
 /**
  * Genera una imagen JPG estilo "factura/recibo", con la portada del álbum a color,
- * título, artista y año en negrita, listado de canciones con su nota alineada y la
- * nota final del álbum.
+ * título con el año al lado, artista abajo, listado de canciones con su nota
+ * alineada y la nota final del álbum.
  */
 public final class GeneradorImagenNota {
 
@@ -33,7 +33,6 @@ public final class GeneradorImagenNota {
 
     private static final Font FUENTE_TITULO = new Font("SansSerif", Font.BOLD, 25);
     private static final Font FUENTE_ARTISTA = new Font("SansSerif", Font.BOLD, 18);
-    private static final Font FUENTE_ANIO = new Font("SansSerif", Font.BOLD, 18);
     private static final Font FUENTE_SEPARADOR = new Font("SansSerif", Font.BOLD, 14);
     private static final Font FUENTE_CANCION = new Font("SansSerif", Font.BOLD, 15);
     private static final Font FUENTE_NOTA = new Font("SansSerif", Font.BOLD, 15);
@@ -52,6 +51,9 @@ public final class GeneradorImagenNota {
             nombreArtista = "Artista desconocido";
         }
 
+        // Título del álbum con el año al lado
+        String tituloConAnio = album.getNombre() + " - " + album.getAnioLanzamiento();
+
         // Lienzo de 1x1 solo para medir texto antes de saber el alto final real.
         BufferedImage medidor = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
         Graphics2D gMedicion = medidor.createGraphics();
@@ -59,7 +61,7 @@ public final class GeneradorImagenNota {
 
         int anchoTitulo = ANCHO_LIENZO - MARGEN - TAMANIO_PORTADA - ESPACIO_PORTADA_TITULO - MARGEN;
         gMedicion.setFont(FUENTE_TITULO);
-        List<String> lineasTitulo = partirEnLineas(gMedicion, album.getNombre(), anchoTitulo);
+        List<String> lineasTitulo = partirEnLineas(gMedicion, tituloConAnio, anchoTitulo);
 
         int anchoTextoCancion = ANCHO_LIENZO - MARGEN - INDENTACION_CANCIONES - ANCHO_COLUMNA_NOTA - MARGEN;
         gMedicion.setFont(FUENTE_CANCION);
@@ -79,7 +81,7 @@ public final class GeneradorImagenNota {
         int altoEncabezado = Math.max(TAMANIO_PORTADA, altoTextoTitulo);
         y = yEncabezado + altoEncabezado + 18;
 
-        int yArtistaAnio = y;
+        int yArtista = y;
         y += 30;
 
         int ySeparador1 = y;
@@ -116,7 +118,7 @@ public final class GeneradorImagenNota {
         g.drawImage(portadaEscalada, MARGEN, yEncabezado, null);
         g.drawRect(MARGEN, yEncabezado, TAMANIO_PORTADA, TAMANIO_PORTADA);
 
-        // Título del álbum (una o más líneas), al lado de la portada
+        // Título del álbum con el año al lado (una o más líneas)
         int xTitulo = MARGEN + TAMANIO_PORTADA + ESPACIO_PORTADA_TITULO;
         g.setFont(FUENTE_TITULO);
         int yLineaTitulo = yEncabezado + 22;
@@ -125,17 +127,13 @@ public final class GeneradorImagenNota {
             yLineaTitulo += altoLineaTitulo;
         }
 
-        // Artista - Año (ambos en negrita)
+        // Nombre del artista
         g.setFont(FUENTE_ARTISTA);
-        g.drawString(nombreArtista, MARGEN, yArtistaAnio);
-        FontMetrics metricasArtista = g.getFontMetrics();
-        int xAnio = MARGEN + metricasArtista.stringWidth(nombreArtista) + 10;
-        g.setFont(FUENTE_ANIO);
-        g.drawString("- " + album.getAnioLanzamiento(), xAnio, yArtistaAnio);
+        g.drawString(nombreArtista, MARGEN, yArtista);
 
         dibujarSeparador(g, ySeparador1);
 
-        // Canciones, con la nota alineada a la derecha de cada una
+        // Canciones con la nota formateada "/10.0"
         for (int i = 0; i < lineasPorCancion.size(); i++) {
             List<String> lineas = lineasPorCancion.get(i);
             int yBase = yBaseCancion.get(i);
@@ -180,9 +178,6 @@ public final class GeneradorImagenNota {
         return archivoDestino;
     }
 
-    /**
-     * Le agrega la terminación "/10.0" a la calificación obtenida.
-     */
     private static String formatearNota(String notaRaw) {
         if (notaRaw == null || notaRaw.trim().isEmpty() || notaRaw.equalsIgnoreCase("Sin calificar")) {
             return "Sin calificar";
@@ -190,12 +185,9 @@ public final class GeneradorImagenNota {
         if (notaRaw.contains("/")) {
             return notaRaw;
         }
-        return notaRaw + " / 10,00";
+        return notaRaw + " / 10,0";
     }
 
-    /**
-     * Dibuja una línea de asteriscos que ocupa todo el ancho del margen disponible.
-     */
     private static void dibujarSeparador(Graphics2D g, int y) {
         g.setFont(FUENTE_SEPARADOR);
         FontMetrics metricas = g.getFontMetrics();
@@ -209,9 +201,6 @@ public final class GeneradorImagenNota {
         g.drawString(linea.toString(), MARGEN, y);
     }
 
-    /**
-     * Parte un texto en varias líneas para evitar superposiciones.
-     */
     private static List<String> partirEnLineas(Graphics2D graficos, String texto, int anchoMaximo) {
         List<String> lineas = new ArrayList<>();
         FontMetrics metricas = graficos.getFontMetrics();
@@ -250,9 +239,6 @@ public final class GeneradorImagenNota {
         }
     }
 
-    /**
-     * Escala la portada manteniendo el formato RGB original (a color).
-     */
     private static BufferedImage escalarPortada(BufferedImage original, int tamanio) {
         BufferedImage escalada = new BufferedImage(tamanio, tamanio, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = escalada.createGraphics();
