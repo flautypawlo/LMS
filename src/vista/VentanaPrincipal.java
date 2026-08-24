@@ -18,7 +18,7 @@ import javax.swing.JPanel;
 
 import controlador.AlbumController;
 import controlador.ArtistaController;
-//import controlador.EstadisticasController;
+import controlador.EstadisticasController;
 import util.Config;
 
 public class VentanaPrincipal extends JFrame {
@@ -32,7 +32,7 @@ public class VentanaPrincipal extends JFrame {
 
     private final ArtistaController artistaController;
     private final AlbumController albumController;
-//   private final EstadisticasController estadisticasController;
+    private final EstadisticasController estadisticasController;
 
     private final CardLayout organizadorTarjetas;
     private final JPanel panelContenedor;
@@ -42,7 +42,7 @@ public class VentanaPrincipal extends JFrame {
     private final PanelAlbumDetalle panelAlbumDetalle;
     private final PanelArtistas panelArtistas;
     private final PanelArtistaDetalle panelArtistaDetalle;
-//    private final PanelEstadisticas panelEstadisticas;
+    private final PanelEstadisticas panelEstadisticas;
 
     public VentanaPrincipal() {
         super("Music Rating System");
@@ -61,8 +61,8 @@ public class VentanaPrincipal extends JFrame {
         }
         this.artistaController = controladorArtistaTemporal;
         this.albumController = controladorAlbumTemporal;
-        /*this.estadisticasController = new EstadisticasController(artistaController.obtenerTodos(),
-                albumController.obtenerTodos());*/
+        this.estadisticasController = new EstadisticasController(artistaController.obtenerTodos(),
+                albumController.obtenerTodos());
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1000, 700);
@@ -80,14 +80,14 @@ public class VentanaPrincipal extends JFrame {
         this.panelAlbumDetalle = new PanelAlbumDetalle(this);
         this.panelArtistas = new PanelArtistas(this);
         this.panelArtistaDetalle = new PanelArtistaDetalle(this);
-        //this.panelEstadisticas = new PanelEstadisticas(this);
+        this.panelEstadisticas = new PanelEstadisticas(this);
 
         panelContenedor.add(panelBienvenida, TARJETA_BIENVENIDA);
         panelContenedor.add(panelAlbums, TARJETA_ALBUMS);
         panelContenedor.add(panelAlbumDetalle, TARJETA_ALBUM_DETALLE);
         panelContenedor.add(panelArtistas, TARJETA_ARTISTAS);
         panelContenedor.add(panelArtistaDetalle, TARJETA_ARTISTA_DETALLE);
-        //panelContenedor.add(panelEstadisticas, TARJETA_ESTADISTICAS);
+        panelContenedor.add(panelEstadisticas, TARJETA_ESTADISTICAS);
 
         add(panelContenedor, BorderLayout.CENTER);
 
@@ -128,15 +128,15 @@ public class VentanaPrincipal extends JFrame {
         panelNavegacion.setOpaque(false);
         BotonRedondeado botonAlbums = new BotonRedondeado("Álbumes", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
         BotonRedondeado botonArtistas = new BotonRedondeado("Artistas", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
-        //BotonRedondeado botonEstadisticas = new BotonRedondeado("Estadísticas", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
+        BotonRedondeado botonEstadisticas = new BotonRedondeado("Estadísticas", TemaVisual.BOTON_FONDO, TemaVisual.BOTON_TEXTO);
 
         botonAlbums.addActionListener(evento -> mostrarAlbums());
         botonArtistas.addActionListener(evento -> mostrarArtistas());
-        //botonEstadisticas.addActionListener(evento -> mostrarEstadisticas());
+        botonEstadisticas.addActionListener(evento -> mostrarEstadisticas());
 
         panelNavegacion.add(botonAlbums);
         panelNavegacion.add(botonArtistas);
-        //panelNavegacion.add(botonEstadisticas);
+        panelNavegacion.add(botonEstadisticas);
         barra.add(panelNavegacion, BorderLayout.EAST);
 
         return barra;
@@ -171,10 +171,10 @@ public class VentanaPrincipal extends JFrame {
         organizadorTarjetas.show(panelContenedor, TARJETA_ARTISTA_DETALLE);
     }
 
-    /*public void mostrarEstadisticas() {
+    public void mostrarEstadisticas() {
         panelEstadisticas.refrescar();
         organizadorTarjetas.show(panelContenedor, TARJETA_ESTADISTICAS);
-    }*/
+    }
 
     public ArtistaController getArtistaController() {
         return artistaController;
@@ -184,7 +184,7 @@ public class VentanaPrincipal extends JFrame {
         return albumController;
     }
 
-    /*public EstadisticasController getEstadisticasController() {
+    public EstadisticasController getEstadisticasController() {
         return estadisticasController;
-    }*/
+    }
 }

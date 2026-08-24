@@ -18,7 +18,9 @@ public class PanelConPestana extends JPanel {
     private static final int RADIO_TARJETA = 22;
     private static final int RADIO_PESTANA = 16;
     private static final int ALTO_PESTANA = 46;
-    private static final int ANCHO_PESTANA = 140;
+    private static final int ANCHO_MINIMO_PESTANA = 90;
+    private static final int RELLENO_HORIZONTAL_PESTANA = 22;
+    private static final Font FUENTE_TITULO = new Font("Serif", Font.BOLD, 22);
 
     private final String titulo;
 
@@ -26,7 +28,7 @@ public class PanelConPestana extends JPanel {
         this.titulo = titulo;
         setOpaque(false);
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(ALTO_PESTANA + 6, 14, 16, 14));
+        setBorder(BorderFactory.createEmptyBorder(ALTO_PESTANA + 4, 12, 10, 12));
     }
 
     @Override
@@ -34,13 +36,18 @@ public class PanelConPestana extends JPanel {
         Graphics2D graficos2D = (Graphics2D) graficos.create();
         graficos2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+        graficos2D.setFont(FUENTE_TITULO);
+        FontMetrics metricas = graficos2D.getFontMetrics();
+        int anchoTexto = metricas.stringWidth(titulo);
+        int anchoPestana = Math.max(ANCHO_MINIMO_PESTANA, anchoTexto + RELLENO_HORIZONTAL_PESTANA * 2);
+
         int ancho = getWidth();
         int alto = getHeight();
         int yTarjeta = ALTO_PESTANA / 2;
 
         RoundRectangle2D formaTarjeta = new RoundRectangle2D.Float(0, yTarjeta, ancho - 1, alto - yTarjeta - 1,
                 RADIO_TARJETA, RADIO_TARJETA);
-        RoundRectangle2D formaPestana = new RoundRectangle2D.Float(0, 0, ANCHO_PESTANA - 1, ALTO_PESTANA - 1,
+        RoundRectangle2D formaPestana = new RoundRectangle2D.Float(0, 0, anchoPestana - 1, ALTO_PESTANA - 1,
                 RADIO_PESTANA, RADIO_PESTANA);
 
         graficos2D.setColor(TemaVisual.FONDO_TARJETA);
@@ -55,10 +62,8 @@ public class PanelConPestana extends JPanel {
         graficos2D.setColor(TemaVisual.BORDE_ACENTO);
         graficos2D.draw(contorno);
 
-        graficos2D.setFont(new Font("Serif", Font.BOLD, 22));
         graficos2D.setColor(TemaVisual.TEXTO_CLARO);
-        FontMetrics metricas = graficos2D.getFontMetrics();
-        int xTexto = (ANCHO_PESTANA - metricas.stringWidth(titulo)) / 2;
+        int xTexto = (anchoPestana - anchoTexto) / 2;
         int yTexto = ALTO_PESTANA / 2 + metricas.getAscent() / 2 - 2;
         graficos2D.drawString(titulo, xTexto, yTexto);
 
